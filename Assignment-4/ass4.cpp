@@ -47,7 +47,7 @@ int main() {
     Graph graph(n);
 
     // Roads (u -> v, time in minutes)
-    graph[0].push_back({1, 4});
+    graph[0].push_back({1, 4}); 
     graph[0].push_back({2, 2});
     graph[1].push_back({2, 5});
     graph[1].push_back({3, 10});
