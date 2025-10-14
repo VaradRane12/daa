@@ -1,69 +1,84 @@
-#include <bits/stdc++.h>
-using namespace std;
+#include <iostream>
+#include <vector>
+#include <algorithm>
 
-pair<int, vector<int>> knapsack(vector<int>& weights, vector<int>& values, int W, vector<int>& priorities) {
-    int n = weights.size();
-    vector<vector<int>> dp(n + 1, vector<int>(W + 1, 0));
+struct Item {
+    int id;
+    int weight;
+    int value;
+};
 
-    // DP computation with visualization
-    for (int i = 1; i <= n; i++) {
+void printSelectedItems(int N, int W, const std::vector<Item>& items, const std::vector<std::vector<int>>& dp) {
+    std::cout << "\nItems to include in the truck:" << std::endl;
+    int totalValue = dp[N][W];
+    int remainingWeight = W;
+    std::vector<int> selectedItemIds;
+
+    for (int i = N; i > 0 && totalValue > 0; i--) {
+        if (totalValue != dp[i - 1][remainingWeight]) {
+            selectedItemIds.push_back(items[i - 1].id);
+            totalValue -= items[i - 1].value;
+            remainingWeight -= items[i - 1].weight;
+        }
+    }
+    
+    if (selectedItemIds.empty()) {
+        std::cout << "No items could be selected within the weight limit." << std::endl;
+    } else {
+        std::cout << "Item IDs: ";
+        for (int i = selectedItemIds.size() - 1; i >= 0; --i) {
+            std::cout << selectedItemIds[i] << (i == 0 ? "" : ", ");
+        }
+        std::cout << std::endl;
+    }
+}
+
+int solveKnapsack(int W, const std::vector<Item>& items, int N) {
+    std::vector<std::vector<int>> dp(N + 1, std::vector<int>(W + 1, 0));
+
+    for (int i = 1; i <= N; i++) {
         for (int w = 1; w <= W; w++) {
-            if (weights[i - 1] <= w) {
-                int effective_value = values[i - 1];
-                if (!priorities.empty())
-                    effective_value += priorities[i - 1] * 1000;
+            int currentWeight = items[i - 1].weight;
+            int currentValue = items[i - 1].value;
 
-                dp[i][w] = max(dp[i - 1][w], dp[i - 1][w - weights[i - 1]] + effective_value);
+            if (currentWeight <= w) {
+                dp[i][w] = std::max(currentValue + dp[i - 1][w - currentWeight], dp[i - 1][w]);
             } else {
                 dp[i][w] = dp[i - 1][w];
             }
         }
-
-        // ---- VISUALIZATION: print DP table after processing item i ----
-        cout << "\nDP Table after item " << i 
-             << " (weight=" << weights[i-1] 
-             << ", value=" << values[i-1] 
-             << ", perishable=" << priorities[i-1] << "):\n";
-
-        for (int r = 0; r <= i; r++) {
-            for (int c = 0; c <= W; c++) {
-                cout << setw(5) << dp[r][c] << " ";
-            }
-            cout << "\n";
-        }
-        cout << "--------------------------------------------------\n";
     }
 
-    // Reconstruct chosen items
-    vector<int> chosen;
-    int w = W;
-    for (int i = n; i > 0; i--) {
-        if (dp[i][w] != dp[i - 1][w]) {
-            chosen.push_back(i - 1);
-            w -= weights[i - 1];
-        }
-    }
-    reverse(chosen.begin(), chosen.end());
+    printSelectedItems(N, W, items, dp);
 
-    return {dp[n][W], chosen};
+    return dp[N][W];
 }
 
 int main() {
-    vector<int> weights = {10, 20, 30, 40, 15};
-    vector<int> values  = {60, 100, 120, 150, 80};
-    vector<int> priorities = {1, 0, 0, 0, 1}; // 1 = perishable
-    int W = 50;
+    int N, W;
 
-    auto result = knapsack(weights, values, W, priorities);
+    std::cout << "--- Relief Truck Logistics Optimizer ---" << std::endl;
+    std::cout << "Enter the number of different item types: ";
+    std::cin >> N;
+    std::cout << "Enter the truck's maximum capacity (kg): ";
+    std::cin >> W;
 
-    cout << "\nMax Utility Achieved: " << result.first << "\n";
-    cout << "Items Selected:\n";
-    for (int idx : result.second) {
-        cout << "  Item " << idx + 1
-             << ": Weight=" << weights[idx]
-             << ", Value=" << values[idx]
-             << ", Perishable=" << (priorities[idx] ? "Yes" : "No") << "\n";
+    std::vector<Item> items(N);
+    std::cout << "\nEnter the weight and utility value for each item:" << std::endl;
+
+    for (int i = 0; i < N; i++) {
+        items[i].id = i + 1;
+        std::cout << "Item " << items[i].id << " - Weight (kg): ";
+        std::cin >> items[i].weight;
+        std::cout << "Item " << items[i].id << " - Utility Value: ";
+        std::cin >> items[i].value;
     }
+
+    int maxUtility = solveKnapsack(W, items, N);
+
+    std::cout << "\n----------------------------------------" << std::endl;
+    std::cout << "Maximum total utility value that can be carried: " << maxUtility << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
 
     return 0;
 }
