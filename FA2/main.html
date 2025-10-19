@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rat Maze Backtracking Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevent scrollbars from UI extending */
+        }
+        #container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+        }
+        .ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(31, 41, 55, 0.9); /* gray-800 with opacity */
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            width: 360px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .log-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(31, 41, 55, 0.9);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            width: 360px;
+            height: 100px;
+            font-family: monospace;
+            font-size: 0.875rem;
+            overflow-y: auto;
+            border: 1px solid #4b5563;
+        }
+        .slider-container input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #4b5563; /* gray-600 */
+            border-radius: 5px;
+            outline: none;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3b82f6; /* blue-500 */
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #3b82f6;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="bg-gray-900">
+
+    <div id="container"></div>
+
+    <div class="ui-panel">
+        <h1 class="text-2xl font-bold text-center text-blue-400">Maze Solver Controls</h1>
+        
+        <!-- Configuration -->
+        <div class="space-y-4 p-4 border border-gray-600 rounded-lg">
+            <h2 class="text-lg font-semibold">Configuration</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="mazeWidth" class="block text-sm font-medium text-gray-300">Width</label>
+                    <input type="number" id="mazeWidth" value="15" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="mazeHeight" class="block text-sm font-medium text-gray-300">Height</label>
+                    <input type="number" id="mazeHeight" value="15" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">
+                Generate Maze & Visualize
+            </button>
+        </div>
+
+        <!-- Solver Controls -->
+        <div class="space-y-4 p-4 border border-gray-600 rounded-lg">
+            <h2 class="text-lg font-semibold">Solver Controls</h2>
+            <div class="flex items-center justify-center space-x-4">
+                <button id="playPauseBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <svg id="playIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 15.132A1.25 1.25 0 005.25 16.5h9.5a1.25 1.25 0 001.232-1.368l-4.75-8.5a1.25 1.25 0 00-2.464 0l-4.75 8.5z" transform="rotate(90 10 10)"></path></svg>
+                    <svg id="pauseIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M5.75 4.5a.75.75 0 00-.75.75v10a.75.75 0 001.5 0v-10a.75.75 0 00-.75-.75zm8.5 0a.75.75 0 00-.75.75v10a.75.75 0 001.5 0v-10a.75.75 0 00-.75-.75z"></path></svg>
+                </button>
+                <button id="stepBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>Step Forward</button>
+            </div>
+            <div class="slider-container space-y-2">
+                <label for="speedSlider" class="block text-sm font-medium text-gray-300">Animation Speed</label>
+                <input type="range" id="speedSlider" min="1" max="200" value="50" class="w-full">
+            </div>
+        </div>
+    </div>
+    
+    <div id="log" class="log-panel">
+        Welcome! Configure maze and click "Generate" to start.
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- GLOBAL VARIABLES & CONSTANTS ---
+        let scene, camera, renderer, controls;
+        let maze, mazeWidth, mazeHeight;
+        let ratObject;
+        let floorTiles = [];
+        let mazeObjects = new THREE.Group();
+        
+        let commandQueue = [];
+        let currentCommandIndex = 0;
+        let isPlaying = false;
+        let animationSpeed = 50;
+        let lastStepTime = 0;
+
+        const TILE_SIZE = 1;
+        const WALL_HEIGHT = 1.5;
+
+        // --- COLORS ---
+        const COLOR_UNVISITED = new THREE.Color(0x6b7280); // gray-500
+        const COLOR_ACTIVE_PATH = new THREE.Color(0x22c55e); // green-500
+        const COLOR_VISITED_DEAD_END = new THREE.Color(0xef4444); // red-500
+        const COLOR_SOLUTION = new THREE.Color(0xeab308); // yellow-500
+
+        // --- UI ELEMENTS ---
+        const generateBtn = document.getElementById('generateBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const stepBtn = document.getElementById('stepBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const logPanel = document.getElementById('log');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+
+        // --- INITIALIZATION ---
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111827); // gray-900
+            scene.fog = new THREE.Fog(0x111827, 50, 100);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(15, 25, 25);
+            
+            // Renderer
+            const container = document.getElementById('container');
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+            
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2.2;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            directionalLight.position.set(20, 30, 15);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+            
+            // Rat Object
+            createRat();
+            
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            setupUIEventListeners();
+
+            animate();
+        }
+
+        // --- ALGORITHMIC LOGIC ---
+        function generateMaze(width, height) {
+            const grid = Array(height).fill(null).map(() => Array(width).fill(0)); // 0 = wall
+            const stack = [];
+            const startX = 1, startY = 1;
+            
+            grid[startY][startX] = 1; // 1 = path
+            stack.push({ x: startX, y: startY });
+
+            while (stack.length > 0) {
+                const current = stack[stack.length - 1];
+                const neighbors = [];
+
+                // Check neighbors (up, down, left, right by 2 cells)
+                const directions = [[0, -2], [0, 2], [-2, 0], [2, 0]];
+                for (const [dx, dy] of directions) {
+                    const nx = current.x + dx;
+                    const ny = current.y + dy;
+                    if (nx > 0 && nx < width - 1 && ny > 0 && ny < height - 1 && grid[ny][nx] === 0) {
+                        neighbors.push({ x: nx, y: ny, dx, dy });
+                    }
+                }
+                
+                if (neighbors.length > 0) {
+                    const { x: nextX, y: nextY, dx, dy } = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    // Carve path to neighbor
+                    grid[nextY][nextX] = 1;
+                    grid[current.y + dy / 2][current.x + dx / 2] = 1;
+                    stack.push({ x: nextX, y: nextY });
+                } else {
+                    stack.pop();
+                }
+            }
+            grid[1][0] = 1; // Entrance
+            grid[height - 2][width - 1] = 1; // Exit
+            return grid;
+        }
+
+        function generateSolutionCommands() {
+            commandQueue = [];
+            const path = [];
+            const visited = Array(mazeHeight).fill(null).map(() => Array(mazeWidth).fill(false));
+            
+            solveRecursive(1, 1, path, visited);
+
+            // After solving, mark the final solution path
+            if(path.length > 0) {
+                 path.forEach(cell => {
+                    commandQueue.push({ type: 'MARK', pos: cell, color: COLOR_SOLUTION, log: 'Highlighting final solution path.' });
+                });
+                commandQueue.push({ type: 'LOG', log: 'Success! Path to the exit found.' });
+            } else {
+                 commandQueue.push({ type: 'LOG', log: 'Failure. No path to the exit exists.' });
+            }
+        }
+        
+        function solveRecursive(x, y, path, visited) {
+            // Rejection cases
+            if (x < 0 || x >= mazeWidth || y < 0 || y >= mazeHeight || maze[y][x] === 0 || visited[y][x]) {
+                commandQueue.push({ type: 'LOG', log: `Constraint Violated: Attempting move to (${x}, ${y}) failed.`});
+                return false;
+            }
+
+            // Mark as visited and add to current path
+            visited[y][x] = true;
+            path.push({ x, y });
+            commandQueue.push({ type: 'MOVE', from: path.length > 1 ? path[path.length - 2] : {x: 1, y: 0}, to: {x,y}, log: `Moving forward to (${x}, ${y}).` });
+            commandQueue.push({ type: 'MARK', pos: { x, y }, color: COLOR_ACTIVE_PATH, log: `Cell (${x}, ${y}) added to current path.` });
+
+            // Acceptance case
+            if (x === mazeWidth - 2 && y === mazeHeight - 2) {
+                return true;
+            }
+
+            // Recursive exploration
+            const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]]; // Down, Right, Up, Left
+            for(const [dx, dy] of directions) {
+                if (solveRecursive(x + dx, y + dy, path, visited)) {
+                    return true;
+                }
+            }
+
+            // Backtrack
+            const lastPos = path.pop();
+            commandQueue.push({ type: 'MOVE', from: lastPos, to: path[path.length - 1], log: `Dead end. Backtracking from (${lastPos.x}, ${lastPos.y}).` });
+            commandQueue.push({ type: 'MARK', pos: lastPos, color: COLOR_VISITED_DEAD_END, log: `Cell (${lastPos.x}, ${lastPos.y}) marked as a dead end.` });
+
+            return false;
+        }
+
+
+        // --- 3D VISUALIZATION ---
+        function createRat() {
+            const ratGroup = new THREE.Group();
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x505050 });
+
+            // Body
+            const body = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.7, 16), bodyMaterial);
+            body.rotation.x = Math.PI / 2;
+            body.position.y = 0.15;
+            ratGroup.add(body);
+
+            // Head
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), bodyMaterial);
+            head.position.y = 0.5;
+            ratGroup.add(head);
+
+            ratObject = ratGroup;
+            ratObject.visible = false;
+            scene.add(ratObject);
+        }
+
+        function buildMazeMesh() {
+            floorTiles = Array(mazeHeight).fill(null).map(() => Array(mazeWidth).fill(null));
+            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x4b5563 }); // gray-600
+            const floorMaterial = new THREE.MeshStandardMaterial({ color: COLOR_UNVISITED, vertexColors: false });
+            
+            const wallGeometry = new THREE.BoxGeometry(TILE_SIZE, WALL_HEIGHT, TILE_SIZE);
+            const floorGeometry = new THREE.BoxGeometry(TILE_SIZE, 0.1, TILE_SIZE);
+
+            for (let y = 0; y < mazeHeight; y++) {
+                for (let x = 0; x < mazeWidth; x++) {
+                    const pos = {
+                        x: x * TILE_SIZE - (mazeWidth * TILE_SIZE) / 2 + TILE_SIZE/2,
+                        y: 0,
+                        z: y * TILE_SIZE - (mazeHeight * TILE_SIZE) / 2 + TILE_SIZE/2
+                    };
+
+                    if (maze[y][x] === 0) { // Wall
+                        const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+                        wall.position.set(pos.x, WALL_HEIGHT / 2, pos.z);
+                        wall.castShadow = true;
+                        wall.receiveShadow = true;
+                        mazeObjects.add(wall);
+                    } else { // Path
+                        const floor = new THREE.Mesh(floorGeometry, floorMaterial.clone());
+                        floor.position.set(pos.x, 0, pos.z);
+                        floor.receiveShadow = true;
+                        mazeObjects.add(floor);
+                        floorTiles[y][x] = floor;
+                    }
+                }
+            }
+            scene.add(mazeObjects);
+        }
+
+        function destroyMazeMesh() {
+            scene.remove(mazeObjects);
+            mazeObjects = new THREE.Group();
+            floorTiles = [];
+        }
+
+        // --- ANIMATION ENGINE ---
+        function processNextCommand() {
+            if (currentCommandIndex >= commandQueue.length) {
+                isPlaying = false;
+                updatePlayButtonState();
+                return;
+            }
+
+            const command = commandQueue[currentCommandIndex];
+            updateLog(command.log);
+
+            switch (command.type) {
+                case 'MOVE':
+                    animateRat(command.from, command.to);
+                    break;
+                case 'MARK':
+                    updateTileColor(command.pos, command.color);
+                    break;
+                case 'LOG':
+                    // Just logging, no 3D action
+                    break;
+            }
+
+            currentCommandIndex++;
+        }
+        
+        let ratAnimation = null;
+        function animateRat(from, to) {
+            const startPos = get3DPosition(from);
+            const endPos = get3DPosition(to);
+
+            ratAnimation = {
+                start: startPos,
+                end: endPos,
+                progress: 0,
+                duration: 200 / animationSpeed, // in seconds
+            };
+        }
+
+        function updateTileColor(pos, color) {
+            const tile = floorTiles[pos.y][pos.x];
+            if (tile) {
+                tile.material.color.set(color);
+            }
+        }
+        
+        function get3DPosition(gridPos) {
+            return new THREE.Vector3(
+                gridPos.x * TILE_SIZE - (mazeWidth * TILE_SIZE) / 2 + TILE_SIZE/2,
+                0.15,
+                gridPos.y * TILE_SIZE - (mazeHeight * TILE_SIZE) / 2 + TILE_SIZE/2
+            );
+        }
+
+        // --- UI & EVENT HANDLERS ---
+        function setupUIEventListeners() {
+            generateBtn.addEventListener('click', handleGenerate);
+            playPauseBtn.addEventListener('click', handlePlayPause);
+            stepBtn.addEventListener('click', handleStep);
+            speedSlider.addEventListener('input', handleSpeedChange);
+        }
+
+        function handleGenerate() {
+            // Get values and ensure they are odd
+            let width = parseInt(document.getElementById('mazeWidth').value);
+            let height = parseInt(document.getElementById('mazeHeight').value);
+            if (width % 2 === 0) width++;
+            if (height % 2 === 0) height++;
+            document.getElementById('mazeWidth').value = width;
+            document.getElementById('mazeHeight').value = height;
+            
+            mazeWidth = width;
+            mazeHeight = height;
+
+            resetVisualization();
+            
+            maze = generateMaze(mazeWidth, mazeHeight);
+            buildMazeMesh();
+            generateSolutionCommands();
+            
+            // Setup rat position
+            ratObject.position.copy(get3DPosition({ x: 1, y: 0 }));
+            ratObject.lookAt(get3DPosition({ x: 1, y: 1 }));
+            ratObject.visible = true;
+
+            // Center camera
+            controls.target.set(0, 0, 0);
+            camera.position.set(mazeWidth, mazeWidth * 1.5, mazeHeight);
+            
+            // Enable controls
+            playPauseBtn.disabled = false;
+            stepBtn.disabled = false;
+            
+            updateLog(`Generated a ${mazeWidth}x${mazeHeight} maze. Ready to solve.`);
+        }
+
+        function resetVisualization() {
+            destroyMazeMesh();
+            commandQueue = [];
+            currentCommandIndex = 0;
+            isPlaying = false;
+            ratAnimation = null;
+            updatePlayButtonState();
+            ratObject.visible = false;
+        }
+
+        function handlePlayPause() {
+            if (currentCommandIndex >= commandQueue.length) {
+                // Restart from beginning if finished
+                currentCommandIndex = 0;
+                floorTiles.flat().forEach(tile => tile && tile.material.color.set(COLOR_UNVISITED));
+                ratObject.position.copy(get3DPosition({ x: 1, y: 0 }));
+            }
+            isPlaying = !isPlaying;
+            updatePlayButtonState();
+        }
+
+        function handleStep() {
+            if (!isPlaying) {
+                processNextCommand();
+            }
+        }
+
+        function handleSpeedChange(event) {
+            animationSpeed = parseInt(event.target.value);
+        }
+        
+        function updatePlayButtonState() {
+            if (isPlaying) {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                stepBtn.disabled = true;
+            } else {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                stepBtn.disabled = false;
+            }
+        }
+
+        function updateLog(message) {
+            if(message) {
+                 logPanel.textContent = message;
+                 logPanel.scrollTop = logPanel.scrollHeight;
+            }
+        }
+
+        // --- RENDER LOOP ---
+        let clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            
+            if (isPlaying && (performance.now() - lastStepTime) > (500 / animationSpeed) && !ratAnimation) {
+                 processNextCommand();
+                 lastStepTime = performance.now();
+            }
+
+            if (ratAnimation) {
+                ratAnimation.progress += delta / ratAnimation.duration;
+                ratObject.position.lerpVectors(ratAnimation.start, ratAnimation.end, Math.min(ratAnimation.progress, 1));
+                ratObject.lookAt(ratAnimation.end);
+                if (ratAnimation.progress >= 1) {
+                    ratAnimation = null;
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- START ---
+        init();
+    </script>
+</body>
+</html>
