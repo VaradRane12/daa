@@ -114,7 +114,7 @@
             </div>
             <div class="slider-container space-y-2">
                 <label for="speedSlider" class="block text-sm font-medium text-gray-300">Animation Speed</label>
-                <input type="range" id="speedSlider" min="1" max="200" value="50" class="w-full">
+                <input type="range" id="speedSlider" min="1" max="2000" value="50" class="w-full">
             </div>
         </div>
     </div>
@@ -269,9 +269,18 @@
         }
         
         function solveRecursive(x, y, path, visited) {
-            // Rejection cases
-            if (x < 0 || x >= mazeWidth || y < 0 || y >= mazeHeight || maze[y][x] === 0 || visited[y][x]) {
-                commandQueue.push({ type: 'LOG', log: `Constraint Violated: Attempting move to (${x}, ${y}) failed.`});
+            const lastPos = path.length > 0 ? path[path.length - 1] : { x: 1, y: 0 };
+
+            // Rejection (Pruning) Base Cases
+            if (x < 0 || x >= mazeWidth || y < 0 || y >= mazeHeight) {
+                return false; // Out of bounds
+            }
+            if (maze[y][x] === 0) { // Wall check
+                commandQueue.push({ type: 'BUMP', from: lastPos, to: {x, y}, log: `Constraint Violated: Path blocked by a wall at (${x}, ${y}).` });
+                return false;
+            }
+            if (visited[y][x]) { // Visited check
+                commandQueue.push({ type: 'BUMP', from: lastPos, to: {x, y}, log: `Constraint Violated: Cell (${x}, ${y}) already visited.` });
                 return false;
             }
 
@@ -295,9 +304,11 @@
             }
 
             // Backtrack
-            const lastPos = path.pop();
-            commandQueue.push({ type: 'MOVE', from: lastPos, to: path[path.length - 1], log: `Dead end. Backtracking from (${lastPos.x}, ${lastPos.y}).` });
-            commandQueue.push({ type: 'MARK', pos: lastPos, color: COLOR_VISITED_DEAD_END, log: `Cell (${lastPos.x}, ${lastPos.y}) marked as a dead end.` });
+            const poppedPos = path.pop();
+            const backtrackTo = path.length > 0 ? path[path.length - 1] : {x: 1, y: 0}; // Go back to entrance if path empty
+            commandQueue.push({ type: 'THINK', pos: poppedPos, log: `Dead end at (${poppedPos.x}, ${poppedPos.y}). Thinking...` });
+            commandQueue.push({ type: 'MOVE', from: poppedPos, to: backtrackTo, log: `Backtracking from (${poppedPos.x}, ${poppedPos.y}).` });
+            commandQueue.push({ type: 'MARK', pos: poppedPos, color: COLOR_VISITED_DEAD_END, log: `Cell (${poppedPos.x}, ${poppedPos.y}) marked as a dead end.` });
 
             return false;
         }
@@ -379,6 +390,12 @@
                 case 'MOVE':
                     animateRat(command.from, command.to);
                     break;
+                case 'BUMP':
+                    animateRatBump(command.from, command.to);
+                    break;
+                case 'THINK':
+                    animateRatThink(command.pos);
+                    break;
                 case 'MARK':
                     updateTileColor(command.pos, command.color);
                     break;
@@ -391,6 +408,9 @@
         }
         
         let ratAnimation = null;
+        let ratBumpAnimation = null;
+        let ratThinkAnimation = null;
+
         function animateRat(from, to) {
             const startPos = get3DPosition(from);
             const endPos = get3DPosition(to);
@@ -400,6 +420,29 @@
                 end: endPos,
                 progress: 0,
                 duration: 200 / animationSpeed, // in seconds
+            };
+        }
+
+        function animateRatBump(from, to) {
+            const startPos = get3DPosition(from);
+            const endPos = get3DPosition(to);
+            const midPos = new THREE.Vector3().lerpVectors(startPos, endPos, 0.3); // Move 30% of the way
+
+            ratBumpAnimation = {
+                start: startPos,
+                mid: midPos,
+                progress: 0,
+                duration: 150 / animationSpeed,
+                phase: 'forward'
+            };
+        }
+
+        function animateRatThink(pos) {
+            const startPos = get3DPosition(pos);
+            ratThinkAnimation = {
+                start: startPos,
+                progress: 0,
+                duration: 400 / animationSpeed,
             };
         }
 
@@ -466,6 +509,8 @@
             currentCommandIndex = 0;
             isPlaying = false;
             ratAnimation = null;
+            ratBumpAnimation = null;
+            ratThinkAnimation = null;
             updatePlayButtonState();
             ratObject.visible = false;
         }
@@ -516,7 +561,7 @@
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
             
-            if (isPlaying && (performance.now() - lastStepTime) > (500 / animationSpeed) && !ratAnimation) {
+            if (isPlaying && (performance.now() - lastStepTime) > (500 / animationSpeed) && !ratAnimation && !ratBumpAnimation && !ratThinkAnimation) {
                  processNextCommand();
                  lastStepTime = performance.now();
             }
@@ -529,6 +574,36 @@
                     ratAnimation = null;
                 }
             }
+
+            if (ratBumpAnimation) {
+                ratBumpAnimation.progress += delta / ratBumpAnimation.duration;
+                if (ratBumpAnimation.phase === 'forward') {
+                    ratObject.position.lerpVectors(ratBumpAnimation.start, ratBumpAnimation.mid, Math.min(ratBumpAnimation.progress, 1));
+                    ratObject.lookAt(ratBumpAnimation.mid);
+                    if (ratBumpAnimation.progress >= 1) {
+                        ratBumpAnimation.progress = 0;
+                        ratBumpAnimation.phase = 'backward';
+                    }
+                } else { // backward phase
+                    ratObject.position.lerpVectors(ratBumpAnimation.mid, ratBumpAnimation.start, Math.min(ratBumpAnimation.progress, 1));
+                    if (ratBumpAnimation.progress >= 1) {
+                        ratBumpAnimation = null; // End animation
+                    }
+                }
+            }
+
+            if (ratThinkAnimation) {
+                ratThinkAnimation.progress += delta / ratThinkAnimation.duration;
+                const bobble = Math.sin(ratThinkAnimation.progress * Math.PI * 2) * 0.1;
+                ratObject.position.y = ratThinkAnimation.start.y + bobble;
+                ratObject.rotation.y += delta * 2;
+
+                if (ratThinkAnimation.progress >= 1) {
+                    ratObject.position.y = ratThinkAnimation.start.y;
+                    ratThinkAnimation = null;
+                }
+            }
+
 
             controls.update();
             renderer.render(scene, camera);
@@ -545,3 +620,4 @@
     </script>
 </body>
 </html>
+
