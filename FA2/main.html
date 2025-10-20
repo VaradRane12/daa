@@ -75,6 +75,9 @@
             cursor: pointer;
             border-radius: 50%;
         }
+        select option:disabled {
+            color: #6b7280;
+        }
     </style>
 </head>
 <body class="bg-gray-900">
@@ -97,6 +100,52 @@
                     <input type="number" id="mazeHeight" value="15" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
             </div>
+             <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="block text-sm font-medium text-gray-300">Exploration Order</label>
+                    <button id="shuffleBtn" class="text-xs bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-2 rounded transition-colors">
+                        Shuffle
+                    </button>
+                </div>
+                <div id="direction-order-container" class="grid grid-cols-4 gap-2">
+                    <div>
+                        <label for="dir1" class="block text-xs text-gray-400 text-center">1st</label>
+                        <select id="dir1" class="direction-select mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-1 px-2 text-white text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="D" selected>Down</option>
+                            <option value="R">Right</option>
+                            <option value="U">Up</option>
+                            <option value="L">Left</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="dir2" class="block text-xs text-gray-400 text-center">2nd</label>
+                        <select id="dir2" class="direction-select mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-1 px-2 text-white text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="D">Down</option>
+                            <option value="R" selected>Right</option>
+                            <option value="U">Up</option>
+                            <option value="L">Left</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="dir3" class="block text-xs text-gray-400 text-center">3rd</label>
+                        <select id="dir3" class="direction-select mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-1 px-2 text-white text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="D">Down</option>
+                            <option value="R">Right</option>
+                            <option value="U" selected>Up</option>
+                            <option value="L">Left</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="dir4" class="block text-xs text-gray-400 text-center">4th</label>
+                        <select id="dir4" class="direction-select mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-1 px-2 text-white text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="D">Down</option>
+                            <option value="R">Right</option>
+                            <option value="U">Up</option>
+                            <option value="L" selected>Left</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
             <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">
                 Generate Maze & Visualize
             </button>
@@ -114,7 +163,7 @@
             </div>
             <div class="slider-container space-y-2">
                 <label for="speedSlider" class="block text-sm font-medium text-gray-300">Animation Speed</label>
-                <input type="range" id="speedSlider" min="1" max="2000" value="50" class="w-full">
+                <input type="range" id="speedSlider" min="1" max="2000" value="500" class="w-full">
             </div>
         </div>
     </div>
@@ -146,8 +195,7 @@
         let currentCommandIndex = 0;
         let isPlaying = false;
         let animationSpeed = 50;
-        let lastStepTime = 0;
-
+        
         const TILE_SIZE = 1;
         const WALL_HEIGHT = 1.5;
 
@@ -165,6 +213,7 @@
         const logPanel = document.getElementById('log');
         const playIcon = document.getElementById('playIcon');
         const pauseIcon = document.getElementById('pauseIcon');
+        const shuffleBtn = document.getElementById('shuffleBtn');
 
         // --- INITIALIZATION ---
         function init() {
@@ -268,6 +317,21 @@
             }
         }
         
+        function getDirectionOrder() {
+            const directionMap = {
+                'U': [0, -1], // Up
+                'D': [0, 1],  // Down
+                'L': [-1, 0], // Left
+                'R': [1, 0]  // Right
+            };
+
+            const orderIds = ['dir1', 'dir2', 'dir3', 'dir4'];
+            return orderIds.map(id => {
+                const select = document.getElementById(id);
+                return directionMap[select.value];
+            });
+        }
+
         function solveRecursive(x, y, path, visited) {
             const lastPos = path.length > 0 ? path[path.length - 1] : { x: 1, y: 0 };
 
@@ -296,7 +360,7 @@
             }
 
             // Recursive exploration
-            const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]]; // Down, Right, Up, Left
+            const directions = getDirectionOrder();
             for(const [dx, dy] of directions) {
                 if (solveRecursive(x + dx, y + dy, path, visited)) {
                     return true;
@@ -386,6 +450,8 @@
             const command = commandQueue[currentCommandIndex];
             updateLog(command.log);
 
+            let isInstant = false;
+
             switch (command.type) {
                 case 'MOVE':
                     animateRat(command.from, command.to);
@@ -398,13 +464,18 @@
                     break;
                 case 'MARK':
                     updateTileColor(command.pos, command.color);
+                    isInstant = true;
                     break;
                 case 'LOG':
-                    // Just logging, no 3D action
+                    isInstant = true;
                     break;
             }
 
             currentCommandIndex++;
+            // If the command was instant and we're playing, process the next one immediately.
+            if (isInstant && isPlaying) {
+                processNextCommand();
+            }
         }
         
         let ratAnimation = null;
@@ -419,20 +490,20 @@
                 start: startPos,
                 end: endPos,
                 progress: 0,
-                duration: 200 / animationSpeed, // in seconds
+                duration: 400 / animationSpeed, 
             };
         }
 
         function animateRatBump(from, to) {
             const startPos = get3DPosition(from);
             const endPos = get3DPosition(to);
-            const midPos = new THREE.Vector3().lerpVectors(startPos, endPos, 0.3); // Move 30% of the way
+            const midPos = new THREE.Vector3().lerpVectors(startPos, endPos, 0.3);
 
             ratBumpAnimation = {
                 start: startPos,
                 mid: midPos,
                 progress: 0,
-                duration: 150 / animationSpeed,
+                duration: 300 / animationSpeed,
                 phase: 'forward'
             };
         }
@@ -442,7 +513,7 @@
             ratThinkAnimation = {
                 start: startPos,
                 progress: 0,
-                duration: 400 / animationSpeed,
+                duration: 800 / animationSpeed,
             };
         }
 
@@ -467,10 +538,35 @@
             playPauseBtn.addEventListener('click', handlePlayPause);
             stepBtn.addEventListener('click', handleStep);
             speedSlider.addEventListener('input', handleSpeedChange);
+            shuffleBtn.addEventListener('click', handleShuffle);
+            document.getElementById('direction-order-container').addEventListener('change', handleDirectionChange);
+            handleDirectionChange(); 
+        }
+
+        function handleShuffle() {
+            const directions = ['U', 'D', 'L', 'R'];
+            for (let i = directions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [directions[i], directions[j]] = [directions[j], directions[i]];
+            }
+            const selects = document.querySelectorAll('.direction-select');
+            selects.forEach((select, index) => {
+                select.value = directions[index];
+            });
+            handleDirectionChange();
+        }
+
+        function handleDirectionChange() {
+            const selects = Array.from(document.querySelectorAll('.direction-select'));
+            const selectedValues = selects.map(s => s.value);
+            selects.forEach(select => {
+                Array.from(select.options).forEach(option => {
+                    option.disabled = selectedValues.includes(option.value) && select.value !== option.value;
+                });
+            });
         }
 
         function handleGenerate() {
-            // Get values and ensure they are odd
             let width = parseInt(document.getElementById('mazeWidth').value);
             let height = parseInt(document.getElementById('mazeHeight').value);
             if (width % 2 === 0) width++;
@@ -487,16 +583,13 @@
             buildMazeMesh();
             generateSolutionCommands();
             
-            // Setup rat position
             ratObject.position.copy(get3DPosition({ x: 1, y: 0 }));
             ratObject.lookAt(get3DPosition({ x: 1, y: 1 }));
             ratObject.visible = true;
 
-            // Center camera
             controls.target.set(0, 0, 0);
             camera.position.set(mazeWidth, mazeWidth * 1.5, mazeHeight);
             
-            // Enable controls
             playPauseBtn.disabled = false;
             stepBtn.disabled = false;
             
@@ -517,17 +610,20 @@
 
         function handlePlayPause() {
             if (currentCommandIndex >= commandQueue.length) {
-                // Restart from beginning if finished
                 currentCommandIndex = 0;
                 floorTiles.flat().forEach(tile => tile && tile.material.color.set(COLOR_UNVISITED));
                 ratObject.position.copy(get3DPosition({ x: 1, y: 0 }));
             }
             isPlaying = !isPlaying;
+            
+            if (isPlaying && !ratAnimation && !ratBumpAnimation && !ratThinkAnimation) {
+                processNextCommand();
+            }
             updatePlayButtonState();
         }
 
         function handleStep() {
-            if (!isPlaying) {
+            if (!isPlaying && !ratAnimation && !ratBumpAnimation && !ratThinkAnimation) {
                 processNextCommand();
             }
         }
@@ -561,10 +657,7 @@
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
             
-            if (isPlaying && (performance.now() - lastStepTime) > (500 / animationSpeed) && !ratAnimation && !ratBumpAnimation && !ratThinkAnimation) {
-                 processNextCommand();
-                 lastStepTime = performance.now();
-            }
+            const wasAnimating = ratAnimation || ratBumpAnimation || ratThinkAnimation;
 
             if (ratAnimation) {
                 ratAnimation.progress += delta / ratAnimation.duration;
@@ -584,10 +677,10 @@
                         ratBumpAnimation.progress = 0;
                         ratBumpAnimation.phase = 'backward';
                     }
-                } else { // backward phase
+                } else { 
                     ratObject.position.lerpVectors(ratBumpAnimation.mid, ratBumpAnimation.start, Math.min(ratBumpAnimation.progress, 1));
                     if (ratBumpAnimation.progress >= 1) {
-                        ratBumpAnimation = null; // End animation
+                        ratBumpAnimation = null;
                     }
                 }
             }
@@ -604,6 +697,10 @@
                 }
             }
 
+            const isAnimating = ratAnimation || ratBumpAnimation || ratThinkAnimation;
+            if (wasAnimating && !isAnimating && isPlaying) {
+                 processNextCommand();
+            }
 
             controls.update();
             renderer.render(scene, camera);
@@ -620,4 +717,5 @@
     </script>
 </body>
 </html>
+
 
