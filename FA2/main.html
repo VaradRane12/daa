@@ -380,21 +380,46 @@
 
         // --- 3D VISUALIZATION ---
         function createRat() {
-            const ratGroup = new THREE.Group();
-            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x505050 });
+            const mouseGroup = new THREE.Group();
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xAAAAAA }); // Light grey mouse color
 
             // Body
-            const body = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.7, 16), bodyMaterial);
-            body.rotation.x = Math.PI / 2;
-            body.position.y = 0.15;
-            ratGroup.add(body);
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 16), bodyMaterial);
+            body.scale.set(1, 1, 1.5); // Stretch it along Z-axis
+            body.position.y = 0.2; // Lift it slightly
+            mouseGroup.add(body);
 
             // Head
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), bodyMaterial);
-            head.position.y = 0.5;
-            ratGroup.add(head);
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 32, 16), bodyMaterial);
+            head.position.set(0, 0.25, 0.4); // Attach to the front of the body
+            mouseGroup.add(head);
+            
+            // Snout
+            const snout = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.2, 16), bodyMaterial);
+            snout.position.set(0, 0.2, 0.6);
+            snout.rotation.x = Math.PI / 2;
+            mouseGroup.add(snout);
 
-            ratObject = ratGroup;
+            // Ears
+            const earGeometry = new THREE.CircleGeometry(0.12, 16);
+            const leftEar = new THREE.Mesh(earGeometry, bodyMaterial);
+            leftEar.position.set(-0.15, 0.4, 0.35);
+            leftEar.rotation.y = Math.PI / 6;
+            mouseGroup.add(leftEar);
+
+            const rightEar = new THREE.Mesh(earGeometry, bodyMaterial);
+            rightEar.position.set(0.15, 0.4, 0.35);
+            rightEar.rotation.y = -Math.PI / 6;
+            mouseGroup.add(rightEar);
+
+            // Tail
+            const tailGeometry = new THREE.CylinderGeometry(0.03, 0.02, 1.0, 8);
+            const tail = new THREE.Mesh(tailGeometry, bodyMaterial);
+            tail.position.set(0, 0.15, -0.9);
+            tail.rotation.x = -Math.PI / 4;
+            mouseGroup.add(tail);
+            
+            ratObject = mouseGroup;
             ratObject.visible = false;
             scene.add(ratObject);
         }
@@ -717,5 +742,4 @@
     </script>
 </body>
 </html>
-
 
