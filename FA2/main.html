@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Prevent scrollbars from UI extending */
+            overflow: hidden;
         }
         #container {
             position: absolute;
@@ -25,7 +25,7 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            background-color: rgba(31, 41, 55, 0.9); /* gray-800 with opacity */
+            background-color: rgba(31, 41, 55, 0.9);
             color: white;
             padding: 1.5rem;
             border-radius: 0.75rem;
@@ -50,25 +50,36 @@
             overflow-y: auto;
             border: 1px solid #4b5563;
         }
+        .tree-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(31, 41, 55, 0.9);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            width: 400px;
+            height: calc(100vh - 40px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        #treeCanvas {
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            background-color: #1f2937;
+        }
         .slider-container input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
             height: 8px;
-            background: #4b5563; /* gray-600 */
+            background: #4b5563;
             border-radius: 5px;
             outline: none;
         }
         .slider-container input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #3b82f6; /* blue-500 */
-            cursor: pointer;
-            border-radius: 50%;
-        }
-        .slider-container input[type="range"]::-moz-range-thumb {
             width: 20px;
             height: 20px;
             background: #3b82f6;
@@ -87,79 +98,41 @@
     <div class="ui-panel">
         <h1 class="text-2xl font-bold text-center text-blue-400">Maze Solver Controls</h1>
         
-        <!-- Configuration -->
         <div class="space-y-4 p-4 border border-gray-600 rounded-lg">
             <h2 class="text-lg font-semibold">Configuration</h2>
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="mazeWidth" class="block text-sm font-medium text-gray-300">Width</label>
-                    <input type="number" id="mazeWidth" value="15" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <input type="number" id="mazeWidth" value="11" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div>
                     <label for="mazeHeight" class="block text-sm font-medium text-gray-300">Height</label>
-                    <input type="number" id="mazeHeight" value="15" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <input type="number" id="mazeHeight" value="11" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
             </div>
              <div class="space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="block text-sm font-medium text-gray-300">Exploration Order</label>
-                    <button id="shuffleBtn" class="text-xs bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-2 rounded transition-colors">
-                        Shuffle
-                    </button>
+                    <button id="shuffleBtn" class="text-xs bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-2 rounded transition-colors">Shuffle</button>
                 </div>
                 <div id="direction-order-container" class="grid grid-cols-4 gap-2">
-                    <div>
-                        <label for="dir1" class="block text-xs text-gray-400 text-center">1st</label>
-                        <select id="dir1" class="direction-select mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-1 px-2 text-white text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="D" selected>Down</option>
-                            <option value="R">Right</option>
-                            <option value="U">Up</option>
-                            <option value="L">Left</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="dir2" class="block text-xs text-gray-400 text-center">2nd</label>
-                        <select id="dir2" class="direction-select mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-1 px-2 text-white text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="D">Down</option>
-                            <option value="R" selected>Right</option>
-                            <option value="U">Up</option>
-                            <option value="L">Left</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="dir3" class="block text-xs text-gray-400 text-center">3rd</label>
-                        <select id="dir3" class="direction-select mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-1 px-2 text-white text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="D">Down</option>
-                            <option value="R">Right</option>
-                            <option value="U" selected>Up</option>
-                            <option value="L">Left</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="dir4" class="block text-xs text-gray-400 text-center">4th</label>
-                        <select id="dir4" class="direction-select mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-1 px-2 text-white text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="D">Down</option>
-                            <option value="R">Right</option>
-                            <option value="U">Up</option>
-                            <option value="L" selected>Left</option>
-                        </select>
-                    </div>
+                    <select id="dir1" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U">Up</option><option value="L">Left</option></select>
+                    <select id="dir2" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R" selected>Right</option><option value="U">Up</option><option value="L">Left</option></select>
+                    <select id="dir3" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U" selected>Up</option><option value="L">Left</option></select>
+                    <select id="dir4" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U">Up</option><option value="L" selected>Left</option></select>
                 </div>
             </div>
-            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">
-                Generate Maze & Visualize
-            </button>
+            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Generate Maze & Visualize</button>
         </div>
 
-        <!-- Solver Controls -->
         <div class="space-y-4 p-4 border border-gray-600 rounded-lg">
             <h2 class="text-lg font-semibold">Solver Controls</h2>
             <div class="flex items-center justify-center space-x-4">
-                <button id="playPauseBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <button id="playPauseBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 rounded-full transition disabled:opacity-50" disabled>
                     <svg id="playIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 15.132A1.25 1.25 0 005.25 16.5h9.5a1.25 1.25 0 001.232-1.368l-4.75-8.5a1.25 1.25 0 00-2.464 0l-4.75 8.5z" transform="rotate(90 10 10)"></path></svg>
                     <svg id="pauseIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M5.75 4.5a.75.75 0 00-.75.75v10a.75.75 0 001.5 0v-10a.75.75 0 00-.75-.75zm8.5 0a.75.75 0 00-.75.75v10a.75.75 0 001.5 0v-10a.75.75 0 00-.75-.75z"></path></svg>
                 </button>
-                <button id="stepBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>Step Forward</button>
+                <button id="stepBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50" disabled>Step Forward</button>
             </div>
             <div class="slider-container space-y-2">
                 <label for="speedSlider" class="block text-sm font-medium text-gray-300">Animation Speed</label>
@@ -168,117 +141,94 @@
         </div>
     </div>
     
-    <div id="log" class="log-panel">
-        Welcome! Configure maze and click "Generate" to start.
+    <div class="tree-panel">
+        <h2 class="text-lg font-semibold text-center mb-2">Decision Tree</h2>
+        <canvas id="treeCanvas"></canvas>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
-            }
-        }
-    </script>
+    <div id="log" class="log-panel">Welcome! Configure and generate a maze to start.</div>
+
+    <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/" }}</script>
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- GLOBAL VARIABLES & CONSTANTS ---
         let scene, camera, renderer, controls;
         let maze, mazeWidth, mazeHeight;
         let ratObject;
         let floorTiles = [];
         let mazeObjects = new THREE.Group();
-        
         let commandQueue = [];
         let currentCommandIndex = 0;
         let isPlaying = false;
         let animationSpeed = 50;
-        
+
+        let treeCanvas, treeCtx;
+        let treeRoot = null;
+        let nodePositions = {};
+        let currentTreeNodeId = null;
+        let nodeCounter = 0;
+
         const TILE_SIZE = 1;
         const WALL_HEIGHT = 1.5;
+        const COLOR_UNVISITED = new THREE.Color(0x6b7280);
+        const COLOR_ACTIVE_PATH = new THREE.Color(0x22c55e);
+        const COLOR_VISITED_DEAD_END = new THREE.Color(0xef4444);
+        const COLOR_SOLUTION = new THREE.Color(0xeab308);
 
-        // --- COLORS ---
-        const COLOR_UNVISITED = new THREE.Color(0x6b7280); // gray-500
-        const COLOR_ACTIVE_PATH = new THREE.Color(0x22c55e); // green-500
-        const COLOR_VISITED_DEAD_END = new THREE.Color(0xef4444); // red-500
-        const COLOR_SOLUTION = new THREE.Color(0xeab308); // yellow-500
-
-        // --- UI ELEMENTS ---
         const generateBtn = document.getElementById('generateBtn');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const stepBtn = document.getElementById('stepBtn');
         const speedSlider = document.getElementById('speedSlider');
         const logPanel = document.getElementById('log');
+        const shuffleBtn = document.getElementById('shuffleBtn');
         const playIcon = document.getElementById('playIcon');
         const pauseIcon = document.getElementById('pauseIcon');
-        const shuffleBtn = document.getElementById('shuffleBtn');
 
-        // --- INITIALIZATION ---
         function init() {
-            // Scene
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x111827); // gray-900
-            scene.fog = new THREE.Fog(0x111827, 50, 100);
-
-            // Camera
+            scene.background = new THREE.Color(0x111827);
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.set(15, 25, 25);
             
-            // Renderer
             const container = document.getElementById('container');
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
             
-            // Controls
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI / 2.2;
-
-            // Lights
+            
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
             scene.add(ambientLight);
-
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
             directionalLight.position.set(20, 30, 15);
             directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
             scene.add(directionalLight);
+
+            treeCanvas = document.getElementById('treeCanvas');
+            treeCtx = treeCanvas.getContext('2d');
             
-            // Rat Object
             createRat();
             
-            // Event Listeners
             window.addEventListener('resize', onWindowResize);
+            onWindowResize();
             setupUIEventListeners();
-
             animate();
         }
 
-        // --- ALGORITHMIC LOGIC ---
         function generateMaze(width, height) {
-            const grid = Array(height).fill(null).map(() => Array(width).fill(0)); // 0 = wall
-            const stack = [];
-            const startX = 1, startY = 1;
-            
-            grid[startY][startX] = 1; // 1 = path
-            stack.push({ x: startX, y: startY });
+            const grid = Array(height).fill(null).map(() => Array(width).fill(0));
+            const stack = [{ x: 1, y: 1 }];
+            grid[1][1] = 1;
 
             while (stack.length > 0) {
                 const current = stack[stack.length - 1];
                 const neighbors = [];
-
-                // Check neighbors (up, down, left, right by 2 cells)
                 const directions = [[0, -2], [0, 2], [-2, 0], [2, 0]];
                 for (const [dx, dy] of directions) {
-                    const nx = current.x + dx;
-                    const ny = current.y + dy;
+                    const nx = current.x + dx, ny = current.y + dy;
                     if (nx > 0 && nx < width - 1 && ny > 0 && ny < height - 1 && grid[ny][nx] === 0) {
                         neighbors.push({ x: nx, y: ny, dx, dy });
                     }
@@ -286,7 +236,6 @@
                 
                 if (neighbors.length > 0) {
                     const { x: nextX, y: nextY, dx, dy } = neighbors[Math.floor(Math.random() * neighbors.length)];
-                    // Carve path to neighbor
                     grid[nextY][nextX] = 1;
                     grid[current.y + dy / 2][current.x + dx / 2] = 1;
                     stack.push({ x: nextX, y: nextY });
@@ -294,8 +243,8 @@
                     stack.pop();
                 }
             }
-            grid[1][0] = 1; // Entrance
-            grid[height - 2][width - 1] = 1; // Exit
+            grid[1][0] = 1;
+            grid[height - 2][width - 1] = 1;
             return grid;
         }
 
@@ -303,150 +252,105 @@
             commandQueue = [];
             const path = [];
             const visited = Array(mazeHeight).fill(null).map(() => Array(mazeWidth).fill(false));
+            nodeCounter = 0;
+            treeRoot = { id: nodeCounter++, pos: {x: 1, y: 0}, children: [], status: 'active' };
             
-            solveRecursive(1, 1, path, visited);
+            solveRecursive(1, 1, path, visited, treeRoot);
 
-            // After solving, mark the final solution path
             if(path.length > 0) {
                  path.forEach(cell => {
-                    commandQueue.push({ type: 'MARK', pos: cell, color: COLOR_SOLUTION, log: 'Highlighting final solution path.' });
+                    const node = findNodeByPos(treeRoot, cell);
+                    if (node) {
+                        commandQueue.push({ type: 'MARK', pos: cell, color: COLOR_SOLUTION, log: 'Highlighting solution path.', treeNodeId: node.id });
+                    }
                 });
-                commandQueue.push({ type: 'LOG', log: 'Success! Path to the exit found.' });
+                commandQueue.push({ type: 'LOG', log: 'Success! Path found.', treeNodeId: treeRoot.id });
             } else {
-                 commandQueue.push({ type: 'LOG', log: 'Failure. No path to the exit exists.' });
+                 commandQueue.push({ type: 'LOG', log: 'Failure. No path exists.', treeNodeId: treeRoot.id });
             }
         }
         
         function getDirectionOrder() {
-            const directionMap = {
-                'U': [0, -1], // Up
-                'D': [0, 1],  // Down
-                'L': [-1, 0], // Left
-                'R': [1, 0]  // Right
-            };
-
-            const orderIds = ['dir1', 'dir2', 'dir3', 'dir4'];
-            return orderIds.map(id => {
-                const select = document.getElementById(id);
-                return directionMap[select.value];
-            });
+            const directionMap = { 'U': [0, -1], 'D': [0, 1], 'L': [-1, 0], 'R': [1, 0] };
+            return ['dir1', 'dir2', 'dir3', 'dir4'].map(id => directionMap[document.getElementById(id).value]);
         }
 
-        function solveRecursive(x, y, path, visited) {
+        function solveRecursive(x, y, path, visited, parentNode) {
             const lastPos = path.length > 0 ? path[path.length - 1] : { x: 1, y: 0 };
 
-            // Rejection (Pruning) Base Cases
-            if (x < 0 || x >= mazeWidth || y < 0 || y >= mazeHeight) {
-                return false; // Out of bounds
-            }
-            if (maze[y][x] === 0) { // Wall check
-                commandQueue.push({ type: 'BUMP', from: lastPos, to: {x, y}, log: `Constraint Violated: Path blocked by a wall at (${x}, ${y}).` });
+            if (x < 0 || x >= mazeWidth || y < 0 || y >= mazeHeight) return false;
+            if (maze[y][x] === 0) {
+                commandQueue.push({ type: 'BUMP', from: lastPos, to: {x, y}, log: `Wall at (${x}, ${y}).`, treeNodeId: parentNode.id });
                 return false;
             }
-            if (visited[y][x]) { // Visited check
-                commandQueue.push({ type: 'BUMP', from: lastPos, to: {x, y}, log: `Constraint Violated: Cell (${x}, ${y}) already visited.` });
+            if (visited[y][x]) {
+                commandQueue.push({ type: 'BUMP', from: lastPos, to: {x, y}, log: `Already visited (${x}, ${y}).`, treeNodeId: parentNode.id });
                 return false;
             }
+            
+            const currentNode = { id: nodeCounter++, pos: {x, y}, children: [], parent: parentNode, status: 'active' };
+            parentNode.children.push(currentNode);
 
-            // Mark as visited and add to current path
             visited[y][x] = true;
             path.push({ x, y });
-            commandQueue.push({ type: 'MOVE', from: path.length > 1 ? path[path.length - 2] : {x: 1, y: 0}, to: {x,y}, log: `Moving forward to (${x}, ${y}).` });
-            commandQueue.push({ type: 'MARK', pos: { x, y }, color: COLOR_ACTIVE_PATH, log: `Cell (${x}, ${y}) added to current path.` });
+            commandQueue.push({ type: 'MOVE', from: lastPos, to: {x,y}, log: `Moving to (${x}, ${y}).`, treeNodeId: currentNode.id });
+            commandQueue.push({ type: 'MARK', pos: { x, y }, color: COLOR_ACTIVE_PATH, log: `Cell (${x}, ${y}) added to path.`, treeNodeId: currentNode.id });
 
-            // Acceptance case
             if (x === mazeWidth - 2 && y === mazeHeight - 2) {
+                path.forEach(p => {
+                    const node = findNodeByPos(treeRoot, p);
+                    if (node) node.status = 'solution';
+                });
                 return true;
             }
 
-            // Recursive exploration
             const directions = getDirectionOrder();
             for(const [dx, dy] of directions) {
-                if (solveRecursive(x + dx, y + dy, path, visited)) {
+                if (solveRecursive(x + dx, y + dy, path, visited, currentNode)) {
                     return true;
                 }
             }
 
-            // Backtrack
-            const poppedPos = path.pop();
-            const backtrackTo = path.length > 0 ? path[path.length - 1] : {x: 1, y: 0}; // Go back to entrance if path empty
-            commandQueue.push({ type: 'THINK', pos: poppedPos, log: `Dead end at (${poppedPos.x}, ${poppedPos.y}). Thinking...` });
-            commandQueue.push({ type: 'MOVE', from: poppedPos, to: backtrackTo, log: `Backtracking from (${poppedPos.x}, ${poppedPos.y}).` });
-            commandQueue.push({ type: 'MARK', pos: poppedPos, color: COLOR_VISITED_DEAD_END, log: `Cell (${poppedPos.x}, ${poppedPos.y}) marked as a dead end.` });
-
+            path.pop();
+            const backtrackTo = path.length > 0 ? path[path.length - 1] : {x: 1, y: 0};
+            currentNode.status = 'dead_end';
+            commandQueue.push({ type: 'THINK', pos: {x,y}, log: `Dead end at (${x}, ${y}).`, treeNodeId: currentNode.id });
+            commandQueue.push({ type: 'MOVE', from: {x,y}, to: backtrackTo, log: `Backtracking from (${x}, ${y}).`, treeNodeId: parentNode.id });
+            commandQueue.push({ type: 'MARK', pos: {x,y}, color: COLOR_VISITED_DEAD_END, log: `Cell (${x}, ${y}) is a dead end.`, treeNodeId: currentNode.id });
             return false;
         }
 
-
-        // --- 3D VISUALIZATION ---
         function createRat() {
-            const mouseGroup = new THREE.Group();
-            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xAAAAAA }); // Light grey mouse color
-
-            // Body
-            const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 16), bodyMaterial);
-            body.scale.set(1, 1, 1.5); // Stretch it along Z-axis
-            body.position.y = 0.2; // Lift it slightly
-            mouseGroup.add(body);
-
-            // Head
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 32, 16), bodyMaterial);
-            head.position.set(0, 0.25, 0.4); // Attach to the front of the body
-            mouseGroup.add(head);
-            
-            // Snout
-            const snout = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.2, 16), bodyMaterial);
-            snout.position.set(0, 0.2, 0.6);
-            snout.rotation.x = Math.PI / 2;
-            mouseGroup.add(snout);
-
-            // Ears
-            const earGeometry = new THREE.CircleGeometry(0.12, 16);
-            const leftEar = new THREE.Mesh(earGeometry, bodyMaterial);
-            leftEar.position.set(-0.15, 0.4, 0.35);
-            leftEar.rotation.y = Math.PI / 6;
-            mouseGroup.add(leftEar);
-
-            const rightEar = new THREE.Mesh(earGeometry, bodyMaterial);
-            rightEar.position.set(0.15, 0.4, 0.35);
-            rightEar.rotation.y = -Math.PI / 6;
-            mouseGroup.add(rightEar);
-
-            // Tail
-            const tailGeometry = new THREE.CylinderGeometry(0.03, 0.02, 1.0, 8);
-            const tail = new THREE.Mesh(tailGeometry, bodyMaterial);
-            tail.position.set(0, 0.15, -0.9);
-            tail.rotation.x = -Math.PI / 4;
-            mouseGroup.add(tail);
-            
-            ratObject = mouseGroup;
+            const ratGroup = new THREE.Group();
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x505050 });
+            const body = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.7, 16), bodyMaterial);
+            body.rotation.x = Math.PI / 2;
+            body.position.y = 0.15;
+            ratGroup.add(body);
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), bodyMaterial);
+            head.position.y = 0.5;
+            ratGroup.add(head);
+            ratObject = ratGroup;
             ratObject.visible = false;
             scene.add(ratObject);
         }
 
         function buildMazeMesh() {
             floorTiles = Array(mazeHeight).fill(null).map(() => Array(mazeWidth).fill(null));
-            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x4b5563 }); // gray-600
-            const floorMaterial = new THREE.MeshStandardMaterial({ color: COLOR_UNVISITED, vertexColors: false });
-            
+            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x4b5563 });
+            const floorMaterial = new THREE.MeshStandardMaterial({ color: COLOR_UNVISITED });
             const wallGeometry = new THREE.BoxGeometry(TILE_SIZE, WALL_HEIGHT, TILE_SIZE);
             const floorGeometry = new THREE.BoxGeometry(TILE_SIZE, 0.1, TILE_SIZE);
 
             for (let y = 0; y < mazeHeight; y++) {
                 for (let x = 0; x < mazeWidth; x++) {
-                    const pos = {
-                        x: x * TILE_SIZE - (mazeWidth * TILE_SIZE) / 2 + TILE_SIZE/2,
-                        y: 0,
-                        z: y * TILE_SIZE - (mazeHeight * TILE_SIZE) / 2 + TILE_SIZE/2
-                    };
-
-                    if (maze[y][x] === 0) { // Wall
+                    const pos = { x: x * TILE_SIZE - (mazeWidth * TILE_SIZE) / 2 + TILE_SIZE/2, y: 0, z: y * TILE_SIZE - (mazeHeight * TILE_SIZE) / 2 + TILE_SIZE/2 };
+                    if (maze[y][x] === 0) {
                         const wall = new THREE.Mesh(wallGeometry, wallMaterial);
                         wall.position.set(pos.x, WALL_HEIGHT / 2, pos.z);
                         wall.castShadow = true;
-                        wall.receiveShadow = true;
                         mazeObjects.add(wall);
-                    } else { // Path
+                    } else {
                         const floor = new THREE.Mesh(floorGeometry, floorMaterial.clone());
                         floor.position.set(pos.x, 0, pos.z);
                         floor.receiveShadow = true;
@@ -458,111 +362,160 @@
             scene.add(mazeObjects);
         }
 
-        function destroyMazeMesh() {
-            scene.remove(mazeObjects);
-            mazeObjects = new THREE.Group();
-            floorTiles = [];
-        }
-
-        // --- ANIMATION ENGINE ---
         function processNextCommand() {
-            if (currentCommandIndex >= commandQueue.length) {
-                isPlaying = false;
-                updatePlayButtonState();
-                return;
-            }
-
+            if (currentCommandIndex >= commandQueue.length) { isPlaying = false; updatePlayButtonState(); return; }
             const command = commandQueue[currentCommandIndex];
             updateLog(command.log);
-
+            currentTreeNodeId = command.treeNodeId;
             let isInstant = false;
-
             switch (command.type) {
-                case 'MOVE':
-                    animateRat(command.from, command.to);
-                    break;
-                case 'BUMP':
-                    animateRatBump(command.from, command.to);
-                    break;
-                case 'THINK':
-                    animateRatThink(command.pos);
-                    break;
-                case 'MARK':
-                    updateTileColor(command.pos, command.color);
-                    isInstant = true;
-                    break;
-                case 'LOG':
-                    isInstant = true;
-                    break;
+                case 'MOVE': animateRat(command.from, command.to); break;
+                case 'BUMP': animateRatBump(command.from, command.to); break;
+                case 'THINK': animateRatThink(command.pos); break;
+                case 'MARK': updateTileColor(command.pos, command.color); isInstant = true; break;
+                case 'LOG': isInstant = true; break;
             }
-
             currentCommandIndex++;
-            // If the command was instant and we're playing, process the next one immediately.
-            if (isInstant && isPlaying) {
-                processNextCommand();
-            }
+            if (isInstant && isPlaying) processNextCommand();
         }
         
-        let ratAnimation = null;
-        let ratBumpAnimation = null;
-        let ratThinkAnimation = null;
+        let ratAnimation = null, ratBumpAnimation = null, ratThinkAnimation = null;
+        function animateRat(from, to) { ratAnimation = { start: get3DPosition(from), end: get3DPosition(to), progress: 0, duration: 400 / animationSpeed }; }
+        function animateRatBump(from, to) { ratBumpAnimation = { start: get3DPosition(from), mid: new THREE.Vector3().lerpVectors(get3DPosition(from), get3DPosition(to), 0.3), progress: 0, duration: 300 / animationSpeed, phase: 'forward' }; }
+        function animateRatThink(pos) { ratThinkAnimation = { start: get3DPosition(pos), progress: 0, duration: 800 / animationSpeed }; }
+        function updateTileColor(pos, color) { if (floorTiles[pos.y]?.[pos.x]) floorTiles[pos.y][pos.x].material.color.set(color); }
+        function get3DPosition(gridPos) { return new THREE.Vector3(gridPos.x * TILE_SIZE - (mazeWidth * TILE_SIZE) / 2 + TILE_SIZE/2, 0.15, gridPos.y * TILE_SIZE - (mazeHeight * TILE_SIZE) / 2 + TILE_SIZE/2); }
+        
+        function drawTree(node) {
+            const pos = nodePositions[node.id];
+            if (!pos) return;
 
-        function animateRat(from, to) {
-            const startPos = get3DPosition(from);
-            const endPos = get3DPosition(to);
-
-            ratAnimation = {
-                start: startPos,
-                end: endPos,
-                progress: 0,
-                duration: 400 / animationSpeed, 
-            };
-        }
-
-        function animateRatBump(from, to) {
-            const startPos = get3DPosition(from);
-            const endPos = get3DPosition(to);
-            const midPos = new THREE.Vector3().lerpVectors(startPos, endPos, 0.3);
-
-            ratBumpAnimation = {
-                start: startPos,
-                mid: midPos,
-                progress: 0,
-                duration: 300 / animationSpeed,
-                phase: 'forward'
-            };
-        }
-
-        function animateRatThink(pos) {
-            const startPos = get3DPosition(pos);
-            ratThinkAnimation = {
-                start: startPos,
-                progress: 0,
-                duration: 800 / animationSpeed,
-            };
-        }
-
-        function updateTileColor(pos, color) {
-            const tile = floorTiles[pos.y][pos.x];
-            if (tile) {
-                tile.material.color.set(color);
+            if (node.parent && nodePositions[node.parent.id]) {
+                const parentPos = nodePositions[node.parent.id];
+                treeCtx.beginPath();
+                treeCtx.moveTo(parentPos.x, parentPos.y);
+                treeCtx.lineTo(pos.x, pos.y);
+                treeCtx.strokeStyle = '#4b5563';
+                treeCtx.stroke();
             }
+
+            treeCtx.beginPath();
+            treeCtx.arc(pos.x, pos.y, 10, 0, 2 * Math.PI);
+            
+            switch(node.status) {
+                case 'solution': treeCtx.fillStyle = '#eab308'; break;
+                case 'dead_end': treeCtx.fillStyle = '#ef4444'; break;
+                default: treeCtx.fillStyle = '#22c55e'; break;
+            }
+            treeCtx.fill();
+
+            if (node.id === currentTreeNodeId) {
+                treeCtx.strokeStyle = '#3b82f6';
+                treeCtx.lineWidth = 3;
+                treeCtx.stroke();
+            }
+
+            treeCtx.fillStyle = 'white';
+            treeCtx.font = '10px Inter';
+            treeCtx.textAlign = 'center';
+            treeCtx.fillText(`(${node.pos.x},${node.pos.y})`, pos.x, pos.y + 4);
+
+            node.children.forEach(child => drawTree(child));
         }
         
-        function get3DPosition(gridPos) {
-            return new THREE.Vector3(
-                gridPos.x * TILE_SIZE - (mazeWidth * TILE_SIZE) / 2 + TILE_SIZE/2,
-                0.15,
-                gridPos.y * TILE_SIZE - (mazeHeight * TILE_SIZE) / 2 + TILE_SIZE/2
-            );
+        function renderTreeVisualization() {
+            treeCtx.clearRect(0, 0, treeCanvas.width, treeCanvas.height);
+            if (!treeRoot) return;
+            nodePositions = {};
+
+            const xSpacing = 30;
+            const ySpacing = 40;
+            let nextX = 15;
+
+            function setNodeX(node) {
+                node.children.forEach(setNodeX);
+                let x;
+                if (node.children.length === 0) {
+                    x = nextX;
+                    nextX += xSpacing;
+                } else if (node.children.length === 1) {
+                    x = nodePositions[node.children[0].id].x;
+                } else {
+                    const firstChildX = nodePositions[node.children[0].id].x;
+                    const lastChildX = nodePositions[node.children[node.children.length - 1].id].x;
+                    x = (firstChildX + lastChildX) / 2;
+                }
+                nodePositions[node.id] = { ...nodePositions[node.id], x };
+            }
+            
+            function setNodeY(node, depth) {
+                nodePositions[node.id] = { ...nodePositions[node.id], y: 20 + depth * ySpacing };
+                node.children.forEach(child => setNodeY(child, depth + 1));
+            }
+
+            setNodeY(treeRoot, 0);
+            setNodeX(treeRoot);
+
+            const levels = {};
+            function collectLevels(node, depth) {
+                if (!levels[depth]) levels[depth] = [];
+                levels[depth].push(node);
+                node.children.forEach(child => collectLevels(child, depth + 1));
+            }
+            collectLevels(treeRoot, 0);
+
+            for (let depth in levels) {
+                const nodes = levels[depth];
+                for (let i = 1; i < nodes.length; i++) {
+                    const prevNodePos = nodePositions[nodes[i - 1].id];
+                    const currNodePos = nodePositions[nodes[i].id];
+                    const requiredSpace = 25;
+                    if (currNodePos.x < prevNodePos.x + requiredSpace) {
+                        const shift = prevNodePos.x + requiredSpace - currNodePos.x;
+                        function shiftSubtree(nodeToShift) {
+                            nodePositions[nodeToShift.id].x += shift;
+                            nodeToShift.children.forEach(shiftSubtree);
+                        }
+                        shiftSubtree(nodes[i]);
+                    }
+                }
+            }
+
+            let minX = Infinity, maxX = -Infinity;
+            for (const id in nodePositions) {
+                minX = Math.min(minX, nodePositions[id].x);
+                maxX = Math.max(maxX, nodePositions[id].x);
+            }
+            const treeWidth = maxX - minX;
+            const canvasCenterX = treeCanvas.width / 2;
+            const treeCenterX = minX + treeWidth / 2;
+            const shiftX = canvasCenterX - treeCenterX;
+            
+            if (isFinite(shiftX)) {
+                for (const id in nodePositions) {
+                    nodePositions[id].x += shiftX;
+                }
+            }
+
+            drawTree(treeRoot);
         }
 
-        // --- UI & EVENT HANDLERS ---
+
+        function findNodeByPos(node, pos) {
+            if (!node) return null;
+            if (node.pos.x === pos.x && node.pos.y === pos.y) return node;
+            for (const child of node.children) {
+                const found = findNodeByPos(child, pos);
+                if (found) return found;
+            }
+            return null;
+        }
+
         function setupUIEventListeners() {
             generateBtn.addEventListener('click', handleGenerate);
             playPauseBtn.addEventListener('click', handlePlayPause);
             stepBtn.addEventListener('click', handleStep);
-            speedSlider.addEventListener('input', handleSpeedChange);
+            speedSlider.addEventListener('input', e => animationSpeed = parseInt(e.target.value));
             shuffleBtn.addEventListener('click', handleShuffle);
             document.getElementById('direction-order-container').addEventListener('change', handleDirectionChange);
             handleDirectionChange(); 
@@ -591,18 +544,23 @@
             });
         }
 
+
         function handleGenerate() {
             let width = parseInt(document.getElementById('mazeWidth').value);
             let height = parseInt(document.getElementById('mazeHeight').value);
             if (width % 2 === 0) width++;
             if (height % 2 === 0) height++;
-            document.getElementById('mazeWidth').value = width;
-            document.getElementById('mazeHeight').value = height;
             
-            mazeWidth = width;
-            mazeHeight = height;
+            mazeWidth = width; mazeHeight = height;
 
-            resetVisualization();
+            scene.remove(mazeObjects);
+            mazeObjects = new THREE.Group();
+            floorTiles = [];
+            commandQueue = [];
+            currentCommandIndex = 0;
+            isPlaying = false;
+            ratObject.visible = false;
+            updatePlayButtonState();
             
             maze = generateMaze(mazeWidth, mazeHeight);
             buildMazeMesh();
@@ -611,50 +569,32 @@
             ratObject.position.copy(get3DPosition({ x: 1, y: 0 }));
             ratObject.lookAt(get3DPosition({ x: 1, y: 1 }));
             ratObject.visible = true;
-
             controls.target.set(0, 0, 0);
             camera.position.set(mazeWidth, mazeWidth * 1.5, mazeHeight);
             
-            playPauseBtn.disabled = false;
-            stepBtn.disabled = false;
-            
-            updateLog(`Generated a ${mazeWidth}x${mazeHeight} maze. Ready to solve.`);
+            playPauseBtn.disabled = false; stepBtn.disabled = false;
+            updateLog(`Generated ${mazeWidth}x${mazeHeight} maze.`);
+            renderTreeVisualization();
         }
-
-        function resetVisualization() {
-            destroyMazeMesh();
-            commandQueue = [];
-            currentCommandIndex = 0;
-            isPlaying = false;
-            ratAnimation = null;
-            ratBumpAnimation = null;
-            ratThinkAnimation = null;
-            updatePlayButtonState();
-            ratObject.visible = false;
-        }
-
+        
         function handlePlayPause() {
             if (currentCommandIndex >= commandQueue.length) {
-                currentCommandIndex = 0;
-                floorTiles.flat().forEach(tile => tile && tile.material.color.set(COLOR_UNVISITED));
-                ratObject.position.copy(get3DPosition({ x: 1, y: 0 }));
+                handleGenerate();
+                return;
             }
             isPlaying = !isPlaying;
-            
-            if (isPlaying && !ratAnimation && !ratBumpAnimation && !ratThinkAnimation) {
-                processNextCommand();
-            }
+            if (isPlaying && !ratAnimation && !ratBumpAnimation && !ratThinkAnimation) processNextCommand();
             updatePlayButtonState();
         }
 
         function handleStep() {
             if (!isPlaying && !ratAnimation && !ratBumpAnimation && !ratThinkAnimation) {
+                if (currentCommandIndex >= commandQueue.length) {
+                    handleGenerate();
+                    return;
+                }
                 processNextCommand();
             }
-        }
-
-        function handleSpeedChange(event) {
-            animationSpeed = parseInt(event.target.value);
         }
         
         function updatePlayButtonState() {
@@ -668,29 +608,19 @@
                 stepBtn.disabled = false;
             }
         }
-
-        function updateLog(message) {
-            if(message) {
-                 logPanel.textContent = message;
-                 logPanel.scrollTop = logPanel.scrollHeight;
-            }
-        }
-
-        // --- RENDER LOOP ---
-        let clock = new THREE.Clock();
+        
+        function updateLog(message) { if(message) logPanel.textContent = message; }
+        
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
-            
             const wasAnimating = ratAnimation || ratBumpAnimation || ratThinkAnimation;
-
+            
             if (ratAnimation) {
                 ratAnimation.progress += delta / ratAnimation.duration;
                 ratObject.position.lerpVectors(ratAnimation.start, ratAnimation.end, Math.min(ratAnimation.progress, 1));
                 ratObject.lookAt(ratAnimation.end);
-                if (ratAnimation.progress >= 1) {
-                    ratAnimation = null;
-                }
+                if (ratAnimation.progress >= 1) ratAnimation = null;
             }
 
             if (ratBumpAnimation) {
@@ -702,42 +632,41 @@
                         ratBumpAnimation.progress = 0;
                         ratBumpAnimation.phase = 'backward';
                     }
-                } else { 
+                } else {
                     ratObject.position.lerpVectors(ratBumpAnimation.mid, ratBumpAnimation.start, Math.min(ratBumpAnimation.progress, 1));
-                    if (ratBumpAnimation.progress >= 1) {
-                        ratBumpAnimation = null;
-                    }
+                    if (ratBumpAnimation.progress >= 1) ratBumpAnimation = null;
                 }
             }
 
             if (ratThinkAnimation) {
                 ratThinkAnimation.progress += delta / ratThinkAnimation.duration;
-                const bobble = Math.sin(ratThinkAnimation.progress * Math.PI * 2) * 0.1;
+                const bobble = Math.sin(ratThinkAnimation.progress * Math.PI * 4) * 0.1;
                 ratObject.position.y = ratThinkAnimation.start.y + bobble;
-                ratObject.rotation.y += delta * 2;
-
+                ratObject.rotation.y += delta * 4;
                 if (ratThinkAnimation.progress >= 1) {
                     ratObject.position.y = ratThinkAnimation.start.y;
                     ratThinkAnimation = null;
                 }
             }
-
-            const isAnimating = ratAnimation || ratBumpAnimation || ratThinkAnimation;
-            if (wasAnimating && !isAnimating && isPlaying) {
-                 processNextCommand();
-            }
-
+            
+            if (wasAnimating && !(ratAnimation || ratBumpAnimation || ratThinkAnimation) && isPlaying) processNextCommand();
+            
             controls.update();
             renderer.render(scene, camera);
+            renderTreeVisualization();
         }
 
+        let clock = new THREE.Clock();
         function onWindowResize() {
+            const treePanel = document.querySelector('.tree-panel');
+            treeCanvas.width = treePanel.clientWidth - 32;
+            treeCanvas.height = treePanel.clientHeight - 60;
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderTreeVisualization();
         }
 
-        // --- START ---
         init();
     </script>
 </body>
