@@ -122,7 +122,9 @@
                     <select id="dir4" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U">Up</option><option value="L" selected>Left</option></select>
                 </div>
             </div>
-            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Generate Maze & Visualize</button>
+            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                Generate Maze & Visualize
+            </button>
         </div>
 
         <div class="space-y-4 p-4 border border-gray-600 rounded-lg">
@@ -321,16 +323,41 @@
         }
 
         function createRat() {
-            const ratGroup = new THREE.Group();
-            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x505050 });
-            const body = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.7, 16), bodyMaterial);
-            body.rotation.x = Math.PI / 2;
-            body.position.y = 0.15;
-            ratGroup.add(body);
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), bodyMaterial);
-            head.position.y = 0.5;
-            ratGroup.add(head);
-            ratObject = ratGroup;
+            const mouseGroup = new THREE.Group();
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xAAAAAA });
+
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 16), bodyMaterial);
+            body.scale.set(1, 1, 1.5);
+            body.position.y = 0.2;
+            mouseGroup.add(body);
+
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 32, 16), bodyMaterial);
+            head.position.set(0, 0.25, 0.4);
+            mouseGroup.add(head);
+            
+            const snout = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.2, 16), bodyMaterial);
+            snout.position.set(0, 0.2, 0.6);
+            snout.rotation.x = Math.PI / 2;
+            mouseGroup.add(snout);
+
+            const earGeometry = new THREE.CircleGeometry(0.12, 16);
+            const leftEar = new THREE.Mesh(earGeometry, bodyMaterial);
+            leftEar.position.set(-0.15, 0.4, 0.35);
+            leftEar.rotation.y = Math.PI / 6;
+            mouseGroup.add(leftEar);
+
+            const rightEar = new THREE.Mesh(earGeometry, bodyMaterial);
+            rightEar.position.set(0.15, 0.4, 0.35);
+            rightEar.rotation.y = -Math.PI / 6;
+            mouseGroup.add(rightEar);
+
+            const tailGeometry = new THREE.CylinderGeometry(0.03, 0.02, 1.0, 8);
+            const tail = new THREE.Mesh(tailGeometry, bodyMaterial);
+            tail.position.set(0, 0.15, -0.9);
+            tail.rotation.x = -Math.PI / 4;
+            mouseGroup.add(tail);
+            
+            ratObject = mouseGroup;
             ratObject.visible = false;
             scene.add(ratObject);
         }
@@ -426,60 +453,30 @@
         function renderTreeVisualization() {
             treeCtx.clearRect(0, 0, treeCanvas.width, treeCanvas.height);
             if (!treeRoot) return;
+
             nodePositions = {};
-
-            const xSpacing = 30;
             const ySpacing = 40;
-            let nextX = 15;
+            const xSpacing = 25;
+            let nextX = 0;
 
-            function setNodeX(node) {
-                node.children.forEach(setNodeX);
+            function calculatePositions(node, depth) {
+                node.children.forEach(child => calculatePositions(child, depth + 1));
+
                 let x;
                 if (node.children.length === 0) {
                     x = nextX;
                     nextX += xSpacing;
-                } else if (node.children.length === 1) {
-                    x = nodePositions[node.children[0].id].x;
                 } else {
-                    const firstChildX = nodePositions[node.children[0].id].x;
-                    const lastChildX = nodePositions[node.children[node.children.length - 1].id].x;
-                    x = (firstChildX + lastChildX) / 2;
+                    const firstChildPos = nodePositions[node.children[0].id];
+                    const lastChildPos = nodePositions[node.children[node.children.length - 1].id];
+                    x = (firstChildPos.x + lastChildPos.x) / 2;
                 }
-                nodePositions[node.id] = { ...nodePositions[node.id], x };
-            }
-            
-            function setNodeY(node, depth) {
-                nodePositions[node.id] = { ...nodePositions[node.id], y: 20 + depth * ySpacing };
-                node.children.forEach(child => setNodeY(child, depth + 1));
+
+                const y = 20 + depth * ySpacing;
+                nodePositions[node.id] = { x, y };
             }
 
-            setNodeY(treeRoot, 0);
-            setNodeX(treeRoot);
-
-            const levels = {};
-            function collectLevels(node, depth) {
-                if (!levels[depth]) levels[depth] = [];
-                levels[depth].push(node);
-                node.children.forEach(child => collectLevels(child, depth + 1));
-            }
-            collectLevels(treeRoot, 0);
-
-            for (let depth in levels) {
-                const nodes = levels[depth];
-                for (let i = 1; i < nodes.length; i++) {
-                    const prevNodePos = nodePositions[nodes[i - 1].id];
-                    const currNodePos = nodePositions[nodes[i].id];
-                    const requiredSpace = 25;
-                    if (currNodePos.x < prevNodePos.x + requiredSpace) {
-                        const shift = prevNodePos.x + requiredSpace - currNodePos.x;
-                        function shiftSubtree(nodeToShift) {
-                            nodePositions[nodeToShift.id].x += shift;
-                            nodeToShift.children.forEach(shiftSubtree);
-                        }
-                        shiftSubtree(nodes[i]);
-                    }
-                }
-            }
+            calculatePositions(treeRoot, 0);
 
             let minX = Infinity, maxX = -Infinity;
             for (const id in nodePositions) {
@@ -496,7 +493,7 @@
                     nodePositions[id].x += shiftX;
                 }
             }
-
+            
             drawTree(treeRoot);
         }
 
@@ -559,7 +556,7 @@
             commandQueue = [];
             currentCommandIndex = 0;
             isPlaying = false;
-            ratObject.visible = false;
+            if(ratObject) ratObject.visible = false;
             updatePlayButtonState();
             
             maze = generateMaze(mazeWidth, mazeHeight);
