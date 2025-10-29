@@ -10,6 +10,8 @@
         body {
             font-family: 'Inter', sans-serif;
             overflow: hidden;
+            margin: 0;
+            padding: 0;
         }
         #container {
             position: absolute;
@@ -34,6 +36,7 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            z-index: 10;
         }
         .log-panel {
             position: absolute;
@@ -49,24 +52,27 @@
             font-size: 0.875rem;
             overflow-y: auto;
             border: 1px solid #4b5563;
+            z-index: 10;
         }
-        .tree-panel {
+        #tree-view {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: rgba(31, 41, 55, 0.9);
-            padding: 1rem;
-            border-radius: 0.75rem;
-            width: 400px;
-            height: calc(100vh - 40px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #111827;
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            /* display: flex; <-- This will be controlled by inline style */
         }
         #treeCanvas {
             border: 1px solid #4b5563;
             border-radius: 0.5rem;
             background-color: #1f2937;
+            cursor: grab;
         }
         .slider-container input[type="range"] {
             -webkit-appearance: none;
@@ -93,62 +99,72 @@
 </head>
 <body class="bg-gray-900">
 
-    <div id="container"></div>
+    <div id="maze-view" style="display: block;">
+        <div id="container"></div>
 
-    <div class="ui-panel">
-        <h1 class="text-2xl font-bold text-center text-blue-400">Maze Solver Controls</h1>
-        
-        <div class="space-y-4 p-4 border border-gray-600 rounded-lg">
-            <h2 class="text-lg font-semibold">Configuration</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label for="mazeWidth" class="block text-sm font-medium text-gray-300">Width</label>
-                    <input type="number" id="mazeWidth" value="11" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        <div class="ui-panel">
+            <h1 class="text-2xl font-bold text-center text-blue-400">Maze Solver Controls</h1>
+            
+            <div class="space-y-4 p-4 border border-gray-600 rounded-lg">
+                <h2 class="text-lg font-semibold">Configuration</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="mazeWidth" class="block text-sm font-medium text-gray-300">Width</label>
+                        <input type="number" id="mazeWidth" value="11" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="mazeHeight" class="block text-sm font-medium text-gray-300">Height</label>
+                        <input type="number" id="mazeHeight" value="11" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
                 </div>
-                <div>
-                    <label for="mazeHeight" class="block text-sm font-medium text-gray-300">Height</label>
-                    <input type="number" id="mazeHeight" value="11" min="5" max="51" step="2" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                 <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-sm font-medium text-gray-300">Exploration Order</label>
+                        <button id="shuffleBtn" class="text-xs bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-2 rounded transition-colors">Shuffle</button>
+                    </div>
+                    <div id="direction-order-container" class="grid grid-cols-4 gap-2">
+                        <select id="dir1" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U">Up</option><option value="L">Left</option></select>
+                        <select id="dir2" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R" selected>Right</option><option value="U">Up</option><option value="L">Left</option></select>
+                        <select id="dir3" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U" selected>Up</option><option value="L">Left</option></select>
+                        <select id="dir4" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U">Up</option><option value="L" selected>Left</option></select>
+                    </div>
                 </div>
-            </div>
-             <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <label class="block text-sm font-medium text-gray-300">Exploration Order</label>
-                    <button id="shuffleBtn" class="text-xs bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-2 rounded transition-colors">Shuffle</button>
-                </div>
-                <div id="direction-order-container" class="grid grid-cols-4 gap-2">
-                    <select id="dir1" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U">Up</option><option value="L">Left</option></select>
-                    <select id="dir2" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R" selected>Right</option><option value="U">Up</option><option value="L">Left</option></select>
-                    <select id="dir3" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U" selected>Up</option><option value="L">Left</option></select>
-                    <select id="dir4" class="direction-select w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-white text-xs"><option value="D">Down</option><option value="R">Right</option><option value="U">Up</option><option value="L" selected>Left</option></select>
-                </div>
-            </div>
-            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">
-                Generate Maze & Visualize
-            </button>
-        </div>
-
-        <div class="space-y-4 p-4 border border-gray-600 rounded-lg">
-            <h2 class="text-lg font-semibold">Solver Controls</h2>
-            <div class="flex items-center justify-center space-x-4">
-                <button id="playPauseBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 rounded-full transition disabled:opacity-50" disabled>
-                    <svg id="playIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 15.132A1.25 1.25 0 005.25 16.5h9.5a1.25 1.25 0 001.232-1.368l-4.75-8.5a1.25 1.25 0 00-2.464 0l-4.75 8.5z" transform="rotate(90 10 10)"></path></svg>
-                    <svg id="pauseIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M5.75 4.5a.75.75 0 00-.75.75v10a.75.75 0 001.5 0v-10a.75.75 0 00-.75-.75zm8.5 0a.75.75 0 00-.75.75v10a.75.75 0 001.5 0v-10a.75.75 0 00-.75-.75z"></path></svg>
+                <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                    Generate Maze & Visualize
                 </button>
-                <button id="stepBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50" disabled>Step Forward</button>
             </div>
-            <div class="slider-container space-y-2">
-                <label for="speedSlider" class="block text-sm font-medium text-gray-300">Animation Speed</label>
-                <input type="range" id="speedSlider" min="1" max="2000" value="500" class="w-full">
+
+            <div class="space-y-4 p-4 border border-gray-600 rounded-lg">
+                <h2 class="text-lg font-semibold">Solver Controls</h2>
+                <div class="flex items-center justify-center space-x-4">
+                    <button id="playPauseBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 rounded-full transition disabled:opacity-50" disabled>
+                        <svg id="playIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 15.132A1.25 1.25 0 005.25 16.5h9.5a1.25 1.25 0 001.232-1.368l-4.75-8.5a1.25 1.25 0 00-2.464 0l-4.75 8.5z" transform="rotate(90 10 10)"></path></svg>
+                        <svg id="pauseIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M5.75 4.5a.75.75 0 00-.75.75v10a.75.75 0 001.5 0v-10a.75.75 0 00-.75-.75zm8.5 0a.75.75 0 00-.75.75v10a.75.75 0 001.5 0v-10a.75.75 0 00-.75-.75z"></path></svg>
+                    </button>
+                    <button id="stepBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50" disabled>Step Forward</button>
+                </div>
+                <div class="slider-container space-y-2">
+                    <label for="speedSlider" class="block text-sm font-medium text-gray-300">Animation Speed</label>
+                    <input type="range" id="speedSlider" min="1" max="2000" value="500" class="w-full">
+                </div>
+                <!-- Add View Decision Tree button -->
+                <button id="viewTreeBtn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50" disabled>
+                    View Decision Tree
+                </button>
             </div>
         </div>
+        
+        <div id="log" class="log-panel">Welcome! Configure and generate a maze to start.</div>
     </div>
     
-    <div class="tree-panel">
-        <h2 class="text-lg font-semibold text-center mb-2">Decision Tree</h2>
+    <!-- Tree View Page -->
+    <div id="tree-view" style="display: none;">
+        <button id="backToMazeBtn" class="absolute top-5 left-5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">
+            &larr; Back to Maze
+        </button>
+        <h2 class="text-2xl font-semibold text-white mb-4">Decision Tree</h2>
         <canvas id="treeCanvas"></canvas>
     </div>
-
-    <div id="log" class="log-panel">Welcome! Configure and generate a maze to start.</div>
 
     <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/" }}</script>
     <script type="module">
@@ -171,6 +187,13 @@
         let currentTreeNodeId = null;
         let nodeCounter = 0;
 
+        let treeScale = 1.0;
+        let treeOffsetX = 0;
+        let treeOffsetY = 0;
+        let isDraggingTree = false;
+        let lastDragX = 0;
+        let lastDragY = 0;
+
         const TILE_SIZE = 1;
         const WALL_HEIGHT = 1.5;
         const COLOR_UNVISITED = new THREE.Color(0x6b7280);
@@ -186,6 +209,12 @@
         const shuffleBtn = document.getElementById('shuffleBtn');
         const playIcon = document.getElementById('playIcon');
         const pauseIcon = document.getElementById('pauseIcon');
+        
+        // Get references to views and buttons
+        const mazeView = document.getElementById('maze-view');
+        const treeView = document.getElementById('tree-view');
+        const viewTreeBtn = document.getElementById('viewTreeBtn');
+        const backToMazeBtn = document.getElementById('backToMazeBtn');
 
         function init() {
             scene = new THREE.Scene();
@@ -215,12 +244,15 @@
             createRat();
             
             window.addEventListener('resize', onWindowResize);
-            onWindowResize();
             setupUIEventListeners();
+            showMazeView(); // Start on the maze view
+            onWindowResize(); // Call once to set initial sizes AFTER view is set
             animate();
+            // showMazeView(); // Start on the maze view <-- MOVED
         }
 
         function generateMaze(width, height) {
+            // ... (maze generation logic is unchanged)
             const grid = Array(height).fill(null).map(() => Array(width).fill(0));
             const stack = [{ x: 1, y: 1 }];
             grid[1][1] = 1;
@@ -251,6 +283,7 @@
         }
 
         function generateSolutionCommands() {
+            // ... (solution command generation is unchanged)
             commandQueue = [];
             const path = [];
             const visited = Array(mazeHeight).fill(null).map(() => Array(mazeWidth).fill(false));
@@ -261,23 +294,25 @@
 
             if(path.length > 0) {
                  path.forEach(cell => {
-                    const node = findNodeByPos(treeRoot, cell);
-                    if (node) {
-                        commandQueue.push({ type: 'MARK', pos: cell, color: COLOR_SOLUTION, log: 'Highlighting solution path.', treeNodeId: node.id });
-                    }
-                });
-                commandQueue.push({ type: 'LOG', log: 'Success! Path found.', treeNodeId: treeRoot.id });
+                     const node = findNodeByPos(treeRoot, cell);
+                     if (node) {
+                         commandQueue.push({ type: 'MARK', pos: cell, color: COLOR_SOLUTION, log: 'Highlighting solution path.', treeNodeId: node.id });
+                     }
+                 });
+                 commandQueue.push({ type: 'LOG', log: 'Success! Path found.', treeNodeId: treeRoot.id });
             } else {
                  commandQueue.push({ type: 'LOG', log: 'Failure. No path exists.', treeNodeId: treeRoot.id });
             }
         }
         
         function getDirectionOrder() {
+            // ... (unchanged)
             const directionMap = { 'U': [0, -1], 'D': [0, 1], 'L': [-1, 0], 'R': [1, 0] };
             return ['dir1', 'dir2', 'dir3', 'dir4'].map(id => directionMap[document.getElementById(id).value]);
         }
 
         function solveRecursive(x, y, path, visited, parentNode) {
+            // ... (recursive solver logic is unchanged)
             const lastPos = path.length > 0 ? path[path.length - 1] : { x: 1, y: 0 };
 
             if (x < 0 || x >= mazeWidth || y < 0 || y >= mazeHeight) return false;
@@ -323,6 +358,7 @@
         }
 
         function createRat() {
+            // ... (rat creation logic is unchanged)
             const mouseGroup = new THREE.Group();
             const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xAAAAAA });
 
@@ -363,6 +399,7 @@
         }
 
         function buildMazeMesh() {
+            // ... (maze mesh logic is unchanged)
             floorTiles = Array(mazeHeight).fill(null).map(() => Array(mazeWidth).fill(null));
             const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x4b5563 });
             const floorMaterial = new THREE.MeshStandardMaterial({ color: COLOR_UNVISITED });
@@ -390,6 +427,7 @@
         }
 
         function processNextCommand() {
+            // ... (command processing logic is unchanged)
             if (currentCommandIndex >= commandQueue.length) { isPlaying = false; updatePlayButtonState(); return; }
             const command = commandQueue[currentCommandIndex];
             updateLog(command.log);
@@ -414,6 +452,7 @@
         function get3DPosition(gridPos) { return new THREE.Vector3(gridPos.x * TILE_SIZE - (mazeWidth * TILE_SIZE) / 2 + TILE_SIZE/2, 0.15, gridPos.y * TILE_SIZE - (mazeHeight * TILE_SIZE) / 2 + TILE_SIZE/2); }
         
         function drawTree(node) {
+            // ... (tree drawing logic is unchanged)
             const pos = nodePositions[node.id];
             if (!pos) return;
 
@@ -452,7 +491,15 @@
         
         function renderTreeVisualization() {
             treeCtx.clearRect(0, 0, treeCanvas.width, treeCanvas.height);
-            if (!treeRoot) return;
+
+            treeCtx.save();
+            treeCtx.translate(treeOffsetX, treeOffsetY);
+            treeCtx.scale(treeScale, treeScale);
+            
+            if (!treeRoot) {
+                treeCtx.restore();
+                return;
+            }
 
             nodePositions = {};
             const ySpacing = 40;
@@ -495,10 +542,13 @@
             }
             
             drawTree(treeRoot);
+
+            treeCtx.restore();
         }
 
 
         function findNodeByPos(node, pos) {
+            // ... (unchanged)
             if (!node) return null;
             if (node.pos.x === pos.x && node.pos.y === pos.y) return node;
             for (const child of node.children) {
@@ -507,6 +557,70 @@
             }
             return null;
         }
+        
+        function handleTreeMouseDown(e) {
+            isDraggingTree = true;
+            lastDragX = e.clientX;
+            lastDragY = e.clientY;
+            treeCanvas.style.cursor = 'grabbing';
+            e.preventDefault();
+        }
+
+        function handleTreeMouseMove(e) {
+            if (!isDraggingTree) return;
+            const dx = e.clientX - lastDragX;
+            const dy = e.clientY - lastDragY;
+            treeOffsetX += dx;
+            treeOffsetY += dy;
+            lastDragX = e.clientX;
+            lastDragY = e.clientY;
+            renderTreeVisualization();
+            e.preventDefault();
+        }
+
+        function handleTreeMouseUp(e) {
+            isDraggingTree = false;
+            treeCanvas.style.cursor = 'grab';
+            e.preventDefault();
+        }
+
+        function handleTreeWheel(e) {
+            e.preventDefault();
+            
+            const rect = treeCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left; // Mouse X relative to canvas
+            const mouseY = e.clientY - rect.top; // Mouse Y relative to canvas
+
+            // Calculate mouse position in the "tree space" before zoom
+            const mouseXInTree = (mouseX - treeOffsetX) / treeScale;
+            const mouseYInTree = (mouseY - treeOffsetY) / treeScale;
+
+            const zoomIntensity = 0.05;
+            const wheelDelta = e.deltaY < 0 ? 1 : -1; // Standardized wheel direction
+            const newScale = Math.max(0.1, Math.min(treeScale + wheelDelta * zoomIntensity * treeScale, 5.0)); // Zoom relative to current scale
+            const scaleChange = newScale - treeScale;
+
+            // Adjust offset to keep the point under the mouse stationary
+            treeOffsetX -= mouseXInTree * scaleChange;
+            treeOffsetY -= mouseYInTree * scaleChange;
+            
+            treeScale = newScale;
+            renderTreeVisualization();
+        }
+
+        // Function to show the tree view
+        function showTreeView() {
+            mazeView.style.display = 'none';
+            treeView.style.display = 'flex'; // Use flex as it's a flex container
+            onWindowResize(); // Re-calculate canvas sizes
+        }
+        
+        // Function to show the maze view
+        function showMazeView() {
+            treeView.style.display = 'none';
+            mazeView.style.display = 'block';
+            onWindowResize(); // Re-calculate canvas sizes
+        }
 
         function setupUIEventListeners() {
             generateBtn.addEventListener('click', handleGenerate);
@@ -514,11 +628,30 @@
             stepBtn.addEventListener('click', handleStep);
             speedSlider.addEventListener('input', e => animationSpeed = parseInt(e.target.value));
             shuffleBtn.addEventListener('click', handleShuffle);
-            document.getElementById('direction-order-container').addEventListener('change', handleDirectionChange);
-            handleDirectionChange(); 
+
+            // Add listeners for direction selects
+            const directionContainer = document.getElementById('direction-order-container');
+            directionContainer.addEventListener('change', handleDirectionChange);
+            Array.from(directionContainer.querySelectorAll('.direction-select')).forEach(select => {
+                select.addEventListener('focus', handleDirectionFocus);
+            });
+            
+            // Add event listeners for view switching
+            viewTreeBtn.addEventListener('click', showTreeView);
+            backToMazeBtn.addEventListener('click', showMazeView);
+            
+            // Add tree canvas listeners
+            treeCanvas.addEventListener('mousedown', handleTreeMouseDown);
+            treeCanvas.addEventListener('mousemove', handleTreeMouseMove);
+            treeCanvas.addEventListener('mouseup', handleTreeMouseUp);
+            treeCanvas.addEventListener('mouseleave', handleTreeMouseUp); // Stop dragging if mouse leaves
+            treeCanvas.addEventListener('wheel', handleTreeWheel);
+            
+            // handleDirectionChange(); // No longer need to run this to disable options
         }
 
         function handleShuffle() {
+            // ... (unchanged)
             const directions = ['U', 'D', 'L', 'R'];
             for (let i = directions.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -528,15 +661,33 @@
             selects.forEach((select, index) => {
                 select.value = directions[index];
             });
-            handleDirectionChange();
+            // handleDirectionChange(); // No event, so this does nothing. Not needed.
         }
 
-        function handleDirectionChange() {
+        let previousDirectionValue;
+        
+        function handleDirectionFocus(e) {
+            // Store the value *before* it changes
+            previousDirectionValue = e.target.value;
+        }
+
+        function handleDirectionChange(e) {
             const selects = Array.from(document.querySelectorAll('.direction-select'));
-            const selectedValues = selects.map(s => s.value);
+            const changedSelect = e.target;
+            const newValue = changedSelect.value;
+            
+            // Find the *other* select that was using the newValue
+            const otherSelect = selects.find(s => s !== changedSelect && s.value === newValue);
+            
+            if (otherSelect && previousDirectionValue) {
+                // Swap its value to the value the changed select *used* to have
+                otherSelect.value = previousDirectionValue;
+            }
+            
+            // Ensure no options are ever disabled
             selects.forEach(select => {
                 Array.from(select.options).forEach(option => {
-                    option.disabled = selectedValues.includes(option.value) && select.value !== option.value;
+                    option.disabled = false;
                 });
             });
         }
@@ -559,6 +710,12 @@
             if(ratObject) ratObject.visible = false;
             updatePlayButtonState();
             
+            // Reset tree transform
+            treeScale = 1.0;
+            treeOffsetX = 0;
+            treeOffsetY = 0;
+            isDraggingTree = false;
+            
             maze = generateMaze(mazeWidth, mazeHeight);
             buildMazeMesh();
             generateSolutionCommands();
@@ -569,12 +726,17 @@
             controls.target.set(0, 0, 0);
             camera.position.set(mazeWidth, mazeWidth * 1.5, mazeHeight);
             
-            playPauseBtn.disabled = false; stepBtn.disabled = false;
+            playPauseBtn.disabled = false; 
+            stepBtn.disabled = false;
+            viewTreeBtn.disabled = false; // Enable the view tree button
+            
             updateLog(`Generated ${mazeWidth}x${mazeHeight} maze.`);
             renderTreeVisualization();
+            showMazeView(); // Ensure maze view is shown after generation
         }
         
         function handlePlayPause() {
+            // ... (unchanged)
             if (currentCommandIndex >= commandQueue.length) {
                 handleGenerate();
                 return;
@@ -585,6 +747,7 @@
         }
 
         function handleStep() {
+            // ... (unchanged)
             if (!isPlaying && !ratAnimation && !ratBumpAnimation && !ratThinkAnimation) {
                 if (currentCommandIndex >= commandQueue.length) {
                     handleGenerate();
@@ -595,6 +758,7 @@
         }
         
         function updatePlayButtonState() {
+            // ... (unchanged)
             if (isPlaying) {
                 playIcon.classList.add('hidden');
                 pauseIcon.classList.remove('hidden');
@@ -611,61 +775,79 @@
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
-            const wasAnimating = ratAnimation || ratBumpAnimation || ratThinkAnimation;
             
-            if (ratAnimation) {
-                ratAnimation.progress += delta / ratAnimation.duration;
-                ratObject.position.lerpVectors(ratAnimation.start, ratAnimation.end, Math.min(ratAnimation.progress, 1));
-                ratObject.lookAt(ratAnimation.end);
-                if (ratAnimation.progress >= 1) ratAnimation = null;
-            }
+            if (treeView.style.display === 'none') {
+                // Maze view is active
+                const wasAnimating = ratAnimation || ratBumpAnimation || ratThinkAnimation;
+            
+                if (ratAnimation) {
+                    ratAnimation.progress += delta / ratAnimation.duration;
+                    ratObject.position.lerpVectors(ratAnimation.start, ratAnimation.end, Math.min(ratAnimation.progress, 1));
+                    ratObject.lookAt(ratAnimation.end);
+                    if (ratAnimation.progress >= 1) ratAnimation = null;
+                }
 
-            if (ratBumpAnimation) {
-                ratBumpAnimation.progress += delta / ratBumpAnimation.duration;
-                if (ratBumpAnimation.phase === 'forward') {
-                    ratObject.position.lerpVectors(ratBumpAnimation.start, ratBumpAnimation.mid, Math.min(ratBumpAnimation.progress, 1));
-                    ratObject.lookAt(ratBumpAnimation.mid);
-                    if (ratBumpAnimation.progress >= 1) {
-                        ratBumpAnimation.progress = 0;
-                        ratBumpAnimation.phase = 'backward';
+                if (ratBumpAnimation) {
+                    ratBumpAnimation.progress += delta / ratBumpAnimation.duration;
+                    if (ratBumpAnimation.phase === 'forward') {
+                        ratObject.position.lerpVectors(ratBumpAnimation.start, ratBumpAnimation.mid, Math.min(ratBumpAnimation.progress, 1));
+                        ratObject.lookAt(ratBumpAnimation.mid);
+                        if (ratBumpAnimation.progress >= 1) {
+                            ratBumpAnimation.progress = 0;
+                            ratBumpAnimation.phase = 'backward';
+                        }
+                    } else {
+                        ratObject.position.lerpVectors(ratBumpAnimation.mid, ratBumpAnimation.start, Math.min(ratBumpAnimation.progress, 1));
+                        if (ratBumpAnimation.progress >= 1) ratBumpAnimation = null;
                     }
-                } else {
-                    ratObject.position.lerpVectors(ratBumpAnimation.mid, ratBumpAnimation.start, Math.min(ratBumpAnimation.progress, 1));
-                    if (ratBumpAnimation.progress >= 1) ratBumpAnimation = null;
                 }
-            }
 
-            if (ratThinkAnimation) {
-                ratThinkAnimation.progress += delta / ratThinkAnimation.duration;
-                const bobble = Math.sin(ratThinkAnimation.progress * Math.PI * 4) * 0.1;
-                ratObject.position.y = ratThinkAnimation.start.y + bobble;
-                ratObject.rotation.y += delta * 4;
-                if (ratThinkAnimation.progress >= 1) {
-                    ratObject.position.y = ratThinkAnimation.start.y;
-                    ratThinkAnimation = null;
+                if (ratThinkAnimation) {
+                    ratThinkAnimation.progress += delta / ratThinkAnimation.duration;
+                    const bobble = Math.sin(ratThinkAnimation.progress * Math.PI * 4) * 0.1;
+                    ratObject.position.y = ratThinkAnimation.start.y + bobble;
+                    ratObject.rotation.y += delta * 4;
+                    if (ratThinkAnimation.progress >= 1) {
+                        ratObject.position.y = ratThinkAnimation.start.y;
+                        ratThinkAnimation = null;
+                    }
                 }
+                
+                if (wasAnimating && !(ratAnimation || ratBumpAnimation || ratThinkAnimation) && isPlaying) processNextCommand();
+                
+                controls.update();
+                renderer.render(scene, camera);
+
+            } else {
+                 // Tree view is active
+                renderTreeVisualization();
             }
-            
-            if (wasAnimating && !(ratAnimation || ratBumpAnimation || ratThinkAnimation) && isPlaying) processNextCommand();
-            
-            controls.update();
-            renderer.render(scene, camera);
-            renderTreeVisualization();
         }
 
         let clock = new THREE.Clock();
         function onWindowResize() {
-            const treePanel = document.querySelector('.tree-panel');
-            treeCanvas.width = treePanel.clientWidth - 32;
-            treeCanvas.height = treePanel.clientHeight - 60;
+            // Resize 3D canvas
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderTreeVisualization();
+
+            // Resize Tree canvas
+            // Use window dimensions for full-screen tree view
+            treeCanvas.width = window.innerWidth * 0.9;
+            treeCanvas.height = window.innerHeight * 0.85;
+            
+            // Re-render tree if it's visible
+            if (treeView.style.display !== 'none') {
+                renderTreeVisualization();
+            }
         }
 
         init();
     </script>
 </body>
 </html>
+
+
+
+
 
