@@ -1,6 +1,5 @@
 #include <bits/stdc++.h>
 using namespace std;
-using namespace std::chrono;
 
 struct Movie {
     string title;
@@ -65,7 +64,7 @@ vector<Movie> loadMovies(const string &file) {
 }
 
 int main() {
-    vector<Movie> movies = loadMovies("movies.csv");
+    vector<Movie> movies = loadMovies("movies_real_titles.csv");
     if(movies.empty()) {
         cout << "No movies loaded\n";
         return 0;
@@ -79,15 +78,10 @@ int main() {
     if(key=="year") cmp = compareByYear;
     else if(key=="popularity") cmp = compareByPopularity;
 
-    auto st = high_resolution_clock::now();
     quickSort(movies, 0, movies.size()-1, cmp);
-    auto et = high_resolution_clock::now();
-    double t = duration<double>(et-st).count();
 
     cout << "\nTop 10:\n";
     for(int i = movies.size()-1; i >= max(0,(int)movies.size()-10); i--)
         movies[i].display();
-
-    cout << "\nTime: " << t << " s\n";
     return 0;
 }
