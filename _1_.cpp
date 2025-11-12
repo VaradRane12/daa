@@ -75,7 +75,7 @@ void print_first_n_orders(const vector<Order>& orders, int n) {
 }
 
 int main() {
-    // srand(static_cast<unsigned>(time(nullptr)));
+    srand(static_cast<unsigned>(time(nullptr)));
     vector<Order> orders;
     orders.reserve(NUM_ORDERS);
 
