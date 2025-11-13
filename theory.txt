@@ -1,0 +1,293 @@
+# Data structures & global design
+
+* `struct Room { string name; int capacity; bool available; };`
+  Holds room identifier, seating capacity, and whether it's free for the current time slot. `available` is reset per time slot in `allocateRooms()`.
+
+* `struct Course { string name; int numStudents; int color; string assignedRoom; };`
+  Holds course id, student count, assigned time-slot (`color`) and final room name. `color == -1` denotes "not colored yet".
+
+* `map<string, vector<string>> studentCourses`
+  Maps student id → list of course ids the student takes. Used to construct conflicts.
+
+* `map<string, vector<string>> adjList`
+  Conflict graph adjacency list: course → list of neighboring courses (courses sharing ≥1 student).
+
+Overall goal: build a conflict graph from student enrolments, color courses so no adjacent courses share a slot (graph coloring), then assign rooms per slot to fit course sizes.
+
+---
+
+# `buildConflictGraph(...)`
+
+Signature:
+
+```cpp
+void buildConflictGraph(map<string, vector<string>>& studentCourses,
+                        map<string, vector<string>>& adjList)
+```
+
+Purpose:
+
+* For each student, consider every unordered pair of courses they take and add an undirected edge between the two courses in `adjList`. That models exam conflicts (same student in two courses → those courses cannot share a time slot).
+
+Line-by-line:
+
+* `for (auto& entry : studentCourses) { const vector<string>& courses = entry.second; ... }`
+  Iterate every student; `courses` lists that student's courses.
+* Double loop `for (int i = 0; i < courses.size(); i++) for (int j = i + 1; j < courses.size(); j++)`
+  Generate every unique pair `(c1,c2)` taken by the same student.
+* `adjList[c1].push_back(c2); adjList[c2].push_back(c1);`
+  Add `c2` to adjacency of `c1` and vice-versa.
+
+Complexity:
+
+* If a student takes `k` courses, this student contributes `O(k^2)` edge insertions. Total time ≈ sum over students of `O(k_i^2)`. In worst case (each student takes many courses) it can be expensive.
+* Note: this implementation may append duplicate edges if multiple students share the same course pair — the adjacency lists will contain duplicates.
+
+Potential issues & improvements:
+
+* **Duplicates**: Use `set` or check existence before pushing, or build edges into `unordered_set<pair>` then produce adj lists to avoid repeated neighbors.
+* **Unknown course keys**: `adjList[c1]` creates entries automatically; if `studentCourses` references a course not present in `courses` map, you’ll get an adjacency entry for a non-initialized course. Validate course ids first if needed.
+* **Memory**: duplicate entries increase memory and make neighbor checks slower.
+
+---
+
+# `greedyColoring(...)`
+
+Signature:
+
+```cpp
+void greedyColoring(map<string, vector<string>>& adjList,
+                    map<string, Course>& courses)
+```
+
+Purpose:
+
+* Assign a color (time-slot) to every course so that no adjacent courses share a color, using a greedy algorithm optimized by processing vertices in descending degree order (Welsh–Powell heuristic). It prints the number of slots used.
+
+Algorithm steps:
+
+1. Build `degreeList` — a vector of `(course, degree)` for each vertex in `adjList`.
+2. `sort(degreeList.begin(), degreeList.end(), [](auto& a, auto& b) { return a.second > b.second; });`
+   Sort vertices descending by degree (higher degree first).
+3. For each `item` in `degreeList`:
+
+   * `string course = item.first;`
+   * Collect `usedColors` set by scanning neighbors: `if (courses[neighbor].color != -1) usedColors.insert(...)`.
+   * Start `color = 0` and increment until `color` not in `usedColors`.
+   * Assign `courses[course].color = color;`
+   * Keep `colorCount = max(colorCount, color + 1)`.
+
+Details & consequences:
+
+* Welsh–Powell heuristic typically reduces number of colors compared to naive random order, but it is not guaranteed to produce the chromatic number; greedy coloring is heuristic and can be suboptimal.
+* `usedColors` is constructed per vertex by checking `courses[neighbor].color`. Therefore coloring depends on the order of vertices in `degreeList` and on previous assignments.
+* `color` values start at 0; printing shows `colorCount` as number of slots.
+
+Complexity:
+
+* Building degree list: `O(V + E)` to compute degrees if degrees are already in adjList sizes; sorting: `O(V log V)`.
+* Coloring loop: for each vertex, scanning all neighbors to form `usedColors` → total `O(sum degrees) = O(E)`. With a set insertion/lookup cost, overall roughly `O(V log V + E * log d)` where `d` is average usedColors set operations; using boolean array or bitset for usedColors (if colors bounded) can reduce cost.
+
+Edge cases & notes:
+
+* If `adjList` contains duplicate neighbors, `usedColors` may get redundant checks — deduplicate neighbors or use sets for adjacency if desired.
+* If `courses` doesn’t contain a neighbor key, `courses[neighbor].color` will create an entry (map operator[]) with default `Course` (but in this program `courses` is pre-populated). Still, prefer validating keys.
+* Ties in degree sorting are broken by `sort`’s stability (unstable for `std::sort`), so ordering among equal-degree nodes is arbitrary — can affect coloring.
+
+Alternative/Improvements:
+
+* Use DSATUR (degree of saturation) for often smaller color sets.
+* Use greedy with random restarts and pick best.
+* Use `vector<int>` instead of `set<int>` to speed `while(used)` detection when color values expected small.
+
+---
+
+# `allocateRooms(...)`
+
+Signature:
+
+```cpp
+void allocateRooms(map<string, Course>& courses, vector<Room>& rooms)
+```
+
+Purpose:
+
+* For each time slot (color), assign each course in that slot to a physical room whose capacity ≥ `numStudents`. The routine sorts courses in a slot by decreasing `numStudents` (first-fit decreasing) and assigns the first available room that fits.
+
+Step-by-step:
+
+1. Group courses by color:
+
+   ```cpp
+   map<int, vector<string>> slotCourses;
+   for (auto& entry : courses) slotCourses[entry.second.color].push_back(entry.first);
+   ```
+2. For each `slot` in `slotCourses`:
+
+   * `timeSlot = slot.first`
+   * `courseList = slot.second`
+   * Sort `courseList` descending by `courses[a].numStudents`.
+   * Reset `for (auto& r : rooms) r.available = true;` — each time slot starts with all rooms free.
+   * For each course in sorted list:
+
+     * Iterate `rooms` in their stored order. If `r.available && r.capacity >= numStudents`, assign room (`courses[cname].assignedRoom = r.name; r.available = false;`) and break.
+     * If none found, `courses[cname].assignedRoom = "Not Available";`
+
+Notes on strategy:
+
+* This is a greedy first-fit decreasing (FFD) by student count within each slot. FFD is a reasonable heuristic but not optimal for bin-packing (room allocation is like bin-packing with 1 item per course per slot).
+* Rooms are iterated in their container order (`rooms[0]`, `rooms[1]`, ...). That order influences assignments. Currently R1 used first whenever fits.
+
+Complexity:
+
+* Grouping courses: `O(V)`. For each slot, sorting courses: `O(m log m)` where `m` is number of courses in that slot. Room assignment tries all rooms per course: `O(m * R)` where `R = number of rooms`.
+
+Potential problems & improvements:
+
+* If a course is larger than every room capacity, it will remain "Not Available" — consider detecting courses > max room capacity earlier and flagging.
+* To better utilize rooms, consider "best-fit" (choose smallest room that fits) or solve a small knapsack/assignment per slot to minimize unused capacity / maximize fit.
+* If `rooms` vector is large, consider sorting rooms descending by capacity once and using best-fit or specialized data structure (multiset keyed by capacity).
+* Resetting `available` per slot is correct behavior (rooms become free for new time slot).
+
+---
+
+# `displayTimetable(...)`
+
+Signature:
+
+```cpp
+void displayTimetable(map<string, Course>& courses)
+```
+
+What it does:
+
+* Prints a table with columns Course | Time Slot | Room.
+* Uses iomanip:
+
+  * `left << setw(10) << "Course" << setw(15) << "Time Slot" << setw(10) << "Room"`
+  * Separator line printed.
+* Iterates `for (auto& entry : courses)` and prints:
+
+  * `entry.first` (map key; course id)
+  * `"Slot " + to_string(entry.second.color + 1)` — displays 1-based slot index
+  * `entry.second.assignedRoom`
+
+Important detail:
+
+* Iteration order of `std::map` is sorted by key (lexicographic): output will be in order `C1, C2, C3, C4` given that map keys are those strings.
+
+---
+
+# `main()` — overall execution flow
+
+1. **Input `studentCourses`** — given sample data:
+
+   ```cpp
+   {"S1", {"C1","C2"}}
+   {"S2", {"C2","C3"}}
+   {"S3", {"C1","C3"}}
+   {"S4", {"C4"}}
+   ```
+2. **Initialize `courses`** with counts and `color = -1`.
+3. **Initialize `rooms`**: R1(100), R2(80), R3(50).
+4. **Build `adjList`**: first ensure each course has empty list:
+
+   ```cpp
+   for (auto& entry : courses) adjList[entry.first] = {};
+   ```
+
+   Then call `buildConflictGraph(studentCourses, adjList)`. Resulting adjacency:
+
+   * C1 ↔ C2, C1 ↔ C3
+   * C2 ↔ C1, C2 ↔ C3
+   * C3 ↔ C1, C3 ↔ C2
+   * C4 has no neighbors (isolated)
+     (Note: duplicates may appear if multiple students produce same pair; here each pair appears once.)
+5. **Apply `greedyColoring(adjList, courses)`**:
+
+   * Degree counts: C1:2, C2:2, C3:2, C4:0.
+   * After sorting, a possible coloring (one logical outcome):
+
+     * First of the degree-2 group → color 0 (say C1 = 0)
+     * Next → color 1 (C2 = 1)
+     * Next → color 2 (C3 = 2)
+     * C4 (degree 0) → color 0
+   * `colorCount` prints `3` (three slots needed).
+6. **`allocateRooms(courses, rooms)`**:
+
+   * Grouped by slot:
+
+     * Slot 0: courses with color 0 → C1(90), C4(40) → sorted: [C1, C4]
+
+       * Rooms reset to available.
+       * C1→R1 (100 >=90) → R1 unavailable
+       * C4→R2 (80 >=40) → R2 unavailable
+     * Slot 1: [C2(70)] → C2→R1 (rooms reset; R1 is available for this slot)
+     * Slot 2: [C3(50)] → C3→R1 (rooms reset)
+   * Final assignedRoom values (one possible deterministic assignment given room order R1,R2,R3):
+
+     * C1: R1, Slot 1
+     * C2: R1, Slot 2
+     * C3: R1, Slot 3
+     * C4: R2, Slot 1
+7. **`displayTimetable(courses)`** prints the table in map order (C1–C4).
+
+Exact output (formatted) for the provided data will look like:
+
+```
+Total Exam Slots (Chromatic Number): 3
+
+Course    Time Slot      Room
+----------------------------------------
+C1        Slot 1         R1
+C2        Slot 2         R1
+C3        Slot 3         R1
+C4        Slot 1         R2
+```
+
+(Spacing depends on `setw` behavior; ordering of color assignments for equal-degree nodes may vary but the shown assignment matches one deterministic greedy outcome.)
+
+---
+
+# Correctness caveats & improvements
+
+* **Graph-color optimality**: greedy + Welsh–Powell is heuristic. For minimal slots (chromatic number) use exact algorithms (exponential) or improved heuristics (DSATUR).
+* **Duplicate edges**: deduplicate adjacency lists to avoid repeated neighbor checks.
+* **Room allocation quality**:
+
+  * Current approach may waste large rooms while smaller rooms could have fit bigger courses in other arrangements. Consider best-fit decreasing, bipartite matching (courses ↔ rooms per slot), or integer programming for optimal assignment per time slot.
+  * If multiple courses exist per slot whose combined fits require smart packing, first-fit may fail while another assignment fits all.
+* **Robustness**:
+
+  * Validate that all course keys referenced in `studentCourses` exist in `courses`.
+  * Handle `color == -1` cases (uncolored) before allocation.
+  * Mark `assignedRoom` default to `"Not Available"` at initialization so absent assignments are explicit.
+* **Performance**:
+
+  * Use `unordered_map` for average O(1) lookup if performance matters and key ordering is not required.
+  * Use `vector` indexes if course ids map to integer ids for faster operations.
+
+---
+
+# Time & space complexity summary
+
+* Building conflict graph: `O(sum over students of k_i^2)` where `k_i` is courses per student. In terms of V=|courses|, E=|edges| after deduplication, building is `O(E)`.
+* Sorting degree list: `O(V log V)`.
+* Coloring: processing neighbors for each vertex → `O(E)` (plus set operations).
+* Room allocation: per slot sorting `O(m log m)` and assignment `O(m*R)`. Overall `O(V log V + V*R)` where `R` number of rooms.
+* Space: adjacency lists `O(V + E)`, plus maps and vector of rooms.
+
+---
+
+# Quick actionable suggestions you can apply now
+
+* Deduplicate `adjList` entries by using `unordered_set` while building then convert to vectors.
+* Use `vector<int>`/bitset for `usedColors` if you expect color indices < 100 to speed lookups.
+* Replace naive room picking with best-fit: pick the smallest available room with `capacity >= students`.
+* Pre-check `maxRoomCapacity` and flag courses > `maxRoomCapacity` early.
+* If you want fewer slots in practice, try DSATUR or randomized greedy with multiple runs and pick best coloring.
+
+If you want, I can:
+
+* produce a version of this code with deduplicated adjacency, best-fit room allocation, and deterministic tie-breaking in sorting; or
+* convert `map<string,Course>` to index-based arrays for performance. Specify which change and I will provide the updated code.
